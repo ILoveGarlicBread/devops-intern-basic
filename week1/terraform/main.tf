@@ -52,12 +52,17 @@ resource "aws_security_group" "sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+resource "aws_iam_instance_profile" "spot_profile" {
+  name = "spot-instance-profile"
+  role = "EC2MangementRole" # Replace with the actual name of your IAM role
+}
 
 resource "aws_instance" "spot_server" {
 	ami = data.aws_ami.ubuntu.id
 	instance_type = "t3.micro"
   key_name      = aws_key_pair.spot_key.key_name
   vpc_security_group_ids = [aws_security_group.sg.id]
+  iam_instance_profile   = aws_iam_instance_profile.spot_profile.name
 	associate_public_ip_address = true 
 	instance_market_options {
 		market_type = "spot"
