@@ -1,0 +1,179 @@
+---
+- name: Deploy Complete Automated Infrastructure Stack
+  hosts: spot-server
+  become: true
+  vars:
+    # Get the public IP dynamically from the instance's perspective
+    public_ip_api_url: "https://checkip.amazonaws.com"
+    hosted_zone_id: "Z05312152ONGPJ6N7P6AL" 
+    domain_name: "lblam.tma-demos.shop"
+    project_dir: "/home/ubuntu/TMA-DevOps-Internship/week1/"
+    certbot_email: "luongbaolam1303@gmail.com"
+
+  tasks:
+    # --- 1. DYNAMIC DNS UPDATE (ROUTE 53) ---
+    - name: Fetch current public IP of the Spot Instance
+      uri:
+        url: "{{ public_ip_api_url }}"
+        return_content: true
+      register: ip_response
+
+    - name: Clean public IP string
+      set_fact:
+        spot_public_ip: "{{ ip_response.content | trim }}"
+
+    - name: Update Route 53 Wildcard A Record
+      amazon.aws.route53:
+        zone: "{{ domain_name }}"
+        record: "*.{{ domain_name }}"
+        type: A
+        ttl: 60
+        comment: "Automated IP update via Ansible deployment"
+        value: "{{ spot_public_ip }}"
+        overwrite: true
+      delegate_to: localhost
+      become: false
+
+    # --- 2. INSTALL DOCKER ENGINE ---
+    - name: Install required system packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - python3-pip
+        state: present
+        update_cache: true
+
+    - name: Add Docker GPG apt key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu jammy stable
+        state: present
+
+    - name: Install Docker Engine
+      apt:
+        name: docker-ce
+        state: present
+        update_cache: true
+
+    - name: Ensure Docker service is running and enabled
+      systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    # --- 3. DOCKER NETWORK CREATION ---
+    - name: Create custom Docker network
+      docker_network:
+        name: containers-net
+        state: present
+
+    # --- 4. BUILD AND DEPLOY CUSTOM BACKEND CONTAINERS ---
+    - name: Create Python app build workspace on remote server
+      file:
+        path: /home/ubuntu/python-app-build
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Copy Python Dockerfile to remote server
+      copy:
+        src:  "{{ project_dir }}/docker/python/Dockerfile"
+        dest: /home/ubuntu/python-app-build/Dockerfile
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Build Custom Python Server Image
+      docker_image:
+        build:
+          path: /home/ubuntu/python-app-build
+        name: python-app-image
+        tag: latest
+        source: build
+
+    - name: Launch Python Application Container
+      docker_container:
+        name: python-app
+        image: python-app-image
+        networks:
+          - name: containers-net
+        state: started
+        restart_policy: always
+
+    # --- 5. INSTALL CERTBOT & ROUTE 53 PLUGIN ---
+    - name: Install Certbot and python3-certbot-dns-route53
+      apt:
+        name:
+          - certbot
+          - python3-certbot-dns-route53
+        state: present
+        update_cache: true
+
+    - name: Request Wildcard SSL Certificate via Route 53 DNS Challenge
+      command: >
+        certbot certonly
+        --dns-route53
+        -d "*.{{ domain_name }}"
+        -d "{{ domain_name }}"
+        --agree-tos
+        --email {{ certbot_email }}
+        --non-interactive
+      args:
+        # Prevents Certbot from requesting a new cert if a valid one already exists
+        creates: "/etc/letsencrypt/live/{{ domain_name }}/fullchain.pem"
+
+    # --- 6. BUILD AND RUN NGINX REVERSE PROXY ---
+    - name: Create build workspace directory on remote server
+      file:
+        path: /home/ubuntu/proxy-build
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Copy Nginx default.conf to remote server
+      copy:
+        src:  "{{ project_dir }}/proxy/proxy.conf"
+        dest: /home/ubuntu/proxy-build/default.conf
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Copy Dockerfile to remote server
+      copy:
+        src:  "{{ project_dir }}/proxy/Dockerfile"
+        dest: /home/ubuntu/proxy-build/Dockerfile
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Build Nginx Proxy Docker Image
+      docker_image:
+        build:
+          path: /home/ubuntu/proxy-build
+        name: nginx-proxy-image
+        tag: v1
+        source: build
+
+    - name: Launch Nginx Proxy Frontline Container
+      docker_container:
+        name: nginx-proxy
+        image: nginx-proxy-image
+        networks:
+          - name: containers-net
+        ports:
+          - "80:80"
+          - "443:443"
+          - "8080:8080"
+        volumes:
+          - /etc/letsencrypt:/etc/letsencrypt:ro
+        state: started
+        restart_policy: always
