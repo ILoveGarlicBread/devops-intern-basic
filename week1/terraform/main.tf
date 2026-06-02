@@ -2,12 +2,6 @@ provider "aws" {
 	region = "ap-south-1"
 }
 
-resource "aws_route53_zone" "hosted_zone" {
-  name = "lam.devops.intern" 
-}
-output "name_servers" {
-  value = aws_route53_zone.hosted_zone.name_servers
-}
 
 data "aws_ami" "ubuntu" {
 	most_recent = true

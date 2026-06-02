@@ -42,3 +42,40 @@
         state: started
         enabled: yes
         daemon_reload: yes
+
+    - name: Download Nginx Exporter
+      get_url:
+        url: https://github.com/nginxinc/nginx-prometheus-exporter/releases/download/v1.1.0/nginx-prometheus-exporter_1.1.0_linux_amd64.tar.gz
+        dest: /tmp/nginx_exporter.tar.gz
+
+    - name: Unarchive Nginx Exporter
+      unarchive:
+        src: /tmp/nginx_exporter.tar.gz
+        dest: /usr/local/bin
+        remote_src: yes
+
+    - name: Create Nginx Exporter systemd service
+      copy:
+        dest: /etc/systemd/system/nginx_exporter.service
+        content: |
+          [Unit]
+          Description=Nginx Prometheus Exporter
+          After=network.target
+
+          [Service]
+          User=ubuntu
+          # We tell the exporter to look at the Nginx status page we just made
+          ExecStart=/usr/local/bin/nginx-prometheus-exporter -nginx.scrape-uri=http://127.0.0.1:8080/metrics
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Start and enable Nginx Exporter
+      systemd:
+        name: nginx_exporter
+        state: started
+        enabled: yes
+        daemon_reload: yes
+
+
+
