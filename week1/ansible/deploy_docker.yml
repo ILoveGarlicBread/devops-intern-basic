@@ -418,3 +418,87 @@
         state: started
         restart_policy: always
         recreate: true
+    # install aws
+    - name: Ensure prerequisite packages are installed (Ubuntu)
+      apt:
+        name: 
+          - unzip
+          - curl
+        state: present
+        update_cache: yes
+
+    - name: Check if AWS CLI is already installed
+      command: aws --version
+      register: aws_cli_check
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Download and install AWS CLI v2 if missing
+      shell: |
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip -o awscliv2.zip
+        sudo ./aws/install --update
+        rm -rf awscliv2.zip ./aws
+      when: aws_cli_check.rc != 0
+    # Auto update ip on route53
+    - name: Create local script directory
+      file:
+        path: /usr/local/bin
+        state: directory
+        mode: '0755'
+
+    - name: Deploy dynamic DNS update script
+      copy:
+        dest: /usr/local/bin/update-route53.sh
+        mode: '0755'
+        content: |
+          #!/bin/bash
+          # Fetch the brand-new public IP assigned on this boot cycle
+          PUBLIC_IP=$(curl -s https://checkip.amazonaws.com)
+          ZONE_ID="Z05312152ONGPJ6N7P6AL"
+          DOMAIN="*.lblam.tma-demos.shop"
+
+          # Build the payload file
+          cat << EOF > /tmp/route53-update.json
+          {
+            "Comment": "Automated IP update on systemd boot initialization",
+            "Changes": [
+              {
+                "Action": "UPSERT",
+                "ResourceRecordSet": {
+                  "Name": "$DOMAIN",
+                  "Type": "A",
+                  "TTL": 60,
+                  "ResourceRecords": [{ "Value": "$PUBLIC_IP" }]
+                }
+              }
+            ]
+          }
+          EOF
+
+          # Send the update to Route 53 using the instance's IAM Profile
+          aws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID --change-batch file:///tmp/route53-update.json
+
+    - name: Deploy Systemd Service for boot tracking
+      copy:
+        dest: /etc/systemd/system/update-dns.service
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=Update Route 53 Wildcard DNS on Boot
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          Type=oneshot
+          ExecStart=/usr/local/bin/update-route53.sh
+          RemainAfterExit=yes
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Enable the DNS update service so it runs on next boot
+      systemd:
+        name: update-dns
+        enabled: true
+        daemon_reload: true
