@@ -1,13 +1,13 @@
 ---
 - name: Deploy Complete Automated Infrastructure Stack
-  hosts: spot-server
+  hosts: workers
   become: true
   vars:
-    # Get the public IP dynamically from the instance's perspective
     public_ip_api_url: "https://checkip.amazonaws.com"
     hosted_zone_id: "Z05312152ONGPJ6N7P6AL" 
     domain_name: "lblam.tma-demos.shop"
-    project_dir: "/home/ubuntu/TMA-DevOps-Internship/week1/"
+    # Using relative pathing makes this fully portable from your project root execution point
+    project_dir: "/home/ubuntu/TMA-DevOps-Internship/week1" 
     certbot_email: "luongbaolam1303@gmail.com"
 
   tasks:
@@ -28,13 +28,13 @@
         record: "*.{{ domain_name }}"
         type: A
         ttl: 60
-        comment: "Automated IP update via Ansible deployment"
+        state: present
         value: "{{ spot_public_ip }}"
         overwrite: true
       delegate_to: localhost
       become: false
 
-    # --- 2. INSTALL DOCKER ENGINE ---
+    # --- 2. INSTALL DOCKER ENGINE (Modernized for Ubuntu 22.04) ---
     - name: Install required system packages
       apt:
         name:
@@ -43,22 +43,34 @@
           - curl
           - software-properties-common
           - python3-pip
+          - python3-docker # Ensures Ansible can interact with Docker socket seamlessly
         state: present
         update_cache: true
 
-    - name: Add Docker GPG apt key
-      apt_key:
+    - name: Create directory for Docker apt keyring
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Download Docker GPG Key safely
+      get_url:
         url: https://download.docker.com/linux/ubuntu/gpg
-        state: present
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
 
-    - name: Add Docker Repository
+    - name: Add Modern Docker Repository to sources list
       apt_repository:
-        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu jammy stable
+        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu jammy stable"
         state: present
+        filename: docker
 
-    - name: Install Docker Engine
+    - name: Install Docker Engine components
       apt:
-        name: docker-ce
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
         state: present
         update_cache: true
 
@@ -70,11 +82,204 @@
 
     # --- 3. DOCKER NETWORK CREATION ---
     - name: Create custom Docker network
-      docker_network:
+      community.docker.docker_network:
         name: containers-net
         state: present
 
     # --- 4. BUILD AND DEPLOY CUSTOM BACKEND CONTAINERS ---
+
+    # TOMCAT
+    - name: Create Tomcat app build workspace on remote server
+      file:
+        path: /home/ubuntu/tomcat-app-build
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Copy tomcat Dockerfile to remote server
+      copy:
+        src: "{{ project_dir }}/docker/tomcat/Dockerfile"
+        dest: /home/ubuntu/tomcat-app-build/Dockerfile
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Build Custom Tomcat Server Image
+      community.docker.docker_image:
+        build:
+          path: /home/ubuntu/tomcat-app-build
+        name: tomcat-app-image
+        tag: latest
+        source: build
+
+    - name: Launch Tomcat Application Container
+      community.docker.docker_container:
+        name: tomcat-app
+        image: tomcat-app-image:latest
+        networks:
+          - name: containers-net
+        state: started
+        restart_policy: always
+        recreate: true
+
+    # NODE
+    - name: Create node app build workspace on remote server
+      file:
+        path: /home/ubuntu/node-app-build
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Copy Node Dockerfile to remote server
+      copy:
+        src: "{{ project_dir }}/docker/node/Dockerfile"
+        dest: /home/ubuntu/node-app-build/Dockerfile
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Build Custom Node Server Image
+      community.docker.docker_image:
+        build:
+          path: /home/ubuntu/node-app-build
+        name: node-app-image
+        tag: latest
+        source: build
+
+    - name: Launch Node Application Container
+      community.docker.docker_container:
+        name: node-app
+        image: node-app-image:latest
+        networks:
+          - name: containers-net
+        state: started
+        restart_policy: always
+        recreate: true
+
+    # APACHE
+    - name: Create apache app build workspace on remote server
+      file:
+        path: /home/ubuntu/apache-app-build
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Copy apache Dockerfile to remote server
+      copy:
+        src: "{{ project_dir }}/docker/apache/Dockerfile"
+        dest: /home/ubuntu/apache-app-build/Dockerfile
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Build Custom Apache Server Image
+      community.docker.docker_image:
+        build:
+          path: /home/ubuntu/apache-app-build
+        name: apache-app-image
+        tag: latest
+        source: build
+
+    - name: Launch Apache Application Container
+      community.docker.docker_container:
+        name: apache-app
+        image: apache-app-image:latest
+        networks:
+          - name: containers-net
+        state: started
+        restart_policy: always
+        recreate: true
+
+    # RUBY
+    - name: Create Ruby app build workspace on remote server
+      file:
+        path: /home/ubuntu/ruby-app-build
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Copy Ruby Dockerfile to remote server
+      copy:
+        src: "{{ project_dir }}/docker/ruby/Dockerfile"
+        dest: /home/ubuntu/ruby-app-build/Dockerfile
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Copy Ruby app.rb to remote server
+      copy:
+        src: "{{ project_dir }}/docker/ruby/app.rb"
+        dest: /home/ubuntu/ruby-app-build/app.rb
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Build Custom Ruby Server Image
+      community.docker.docker_image:
+        build:
+          path: /home/ubuntu/ruby-app-build
+        name: ruby-app-image
+        tag: latest
+        source: build
+
+    - name: Launch ruby Application Container
+      community.docker.docker_container:
+        name: ruby-app
+        image: ruby-app-image:latest
+        networks:
+          - name: containers-net
+        state: started
+        restart_policy: always
+        recreate: true
+
+    # GO
+    - name: Create GO app build workspace on remote server
+      file:
+        path: /home/ubuntu/go-app-build
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Copy Go Dockerfile to remote server
+      copy:
+        src: "{{ project_dir }}/docker/go/Dockerfile"
+        dest: /home/ubuntu/go-app-build/Dockerfile
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Copy Go main.go to remote server
+      copy:
+        src: "{{ project_dir }}/docker/go/main.go"
+        dest: /home/ubuntu/go-app-build/main.go
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Build Custom Go Server Image
+      community.docker.docker_image:
+        build:
+          path: /home/ubuntu/go-app-build
+        name: go-app-image
+        tag: latest
+        source: build
+
+    - name: Launch Go Application Container
+      community.docker.docker_container:
+        name: go-app
+        image: go-app-image:latest
+        networks:
+          - name: containers-net
+        state: started
+        restart_policy: always
+        recreate: true
+
+    # PYTHON
     - name: Create Python app build workspace on remote server
       file:
         path: /home/ubuntu/python-app-build
@@ -85,14 +290,14 @@
 
     - name: Copy Python Dockerfile to remote server
       copy:
-        src:  "{{ project_dir }}/docker/python/Dockerfile"
+        src: "{{ project_dir }}/docker/python/Dockerfile"
         dest: /home/ubuntu/python-app-build/Dockerfile
         owner: ubuntu
         group: ubuntu
         mode: '0644'
 
     - name: Build Custom Python Server Image
-      docker_image:
+      community.docker.docker_image:
         build:
           path: /home/ubuntu/python-app-build
         name: python-app-image
@@ -100,13 +305,14 @@
         source: build
 
     - name: Launch Python Application Container
-      docker_container:
+      community.docker.docker_container:
         name: python-app
-        image: python-app-image
+        image: python-app-image:latest
         networks:
           - name: containers-net
         state: started
         restart_policy: always
+        recreate: true
 
     # --- 5. INSTALL CERTBOT & ROUTE 53 PLUGIN ---
     - name: Install Certbot and python3-certbot-dns-route53
@@ -127,7 +333,6 @@
         --email {{ certbot_email }}
         --non-interactive
       args:
-        # Prevents Certbot from requesting a new cert if a valid one already exists
         creates: "/etc/letsencrypt/live/{{ domain_name }}/fullchain.pem"
 
     # --- 6. BUILD AND RUN NGINX REVERSE PROXY ---
@@ -141,22 +346,22 @@
 
     - name: Copy Nginx default.conf to remote server
       copy:
-        src:  "{{ project_dir }}/proxy/proxy.conf"
-        dest: /home/ubuntu/proxy-build/default.conf
+        src: "{{ project_dir }}/proxy/proxy.conf"
+        dest: /home/ubuntu/proxy-build/proxy.conf
         owner: ubuntu
         group: ubuntu
         mode: '0644'
 
     - name: Copy Dockerfile to remote server
       copy:
-        src:  "{{ project_dir }}/proxy/Dockerfile"
+        src: "{{ project_dir }}/proxy/Dockerfile"
         dest: /home/ubuntu/proxy-build/Dockerfile
         owner: ubuntu
         group: ubuntu
         mode: '0644'
 
     - name: Build Nginx Proxy Docker Image
-      docker_image:
+      community.docker.docker_image:
         build:
           path: /home/ubuntu/proxy-build
         name: nginx-proxy-image
@@ -164,9 +369,9 @@
         source: build
 
     - name: Launch Nginx Proxy Frontline Container
-      docker_container:
+      community.docker.docker_container:
         name: nginx-proxy
-        image: nginx-proxy-image
+        image: nginx-proxy-image:v1
         networks:
           - name: containers-net
         ports:
@@ -177,3 +382,4 @@
           - /etc/letsencrypt:/etc/letsencrypt:ro
         state: started
         restart_policy: always
+        recreate: true

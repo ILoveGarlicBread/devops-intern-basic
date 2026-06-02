@@ -44,6 +44,21 @@ resource "aws_security_group" "sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # Allow Prometheus Node Exporter (Task 12 verification)
+  ingress {
+    from_port   = 9100
+    to_port     = 9100
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # Can be restricted to your master instance private/public IP for better security
+  }
+
+  # Allow Nginx Prometheus Exporter (Task 12 verification)
+  ingress {
+    from_port   = 9113
+    to_port     = 9113
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # Can be restricted to your master instance private/public IP for better security
+  }
   # Allow all outbound traffic (so the server can download Docker)
   egress {
     from_port   = 0
@@ -59,7 +74,7 @@ resource "aws_iam_instance_profile" "spot_profile" {
 
 resource "aws_instance" "spot_server" {
 	ami = data.aws_ami.ubuntu.id
-	instance_type = "t3.micro"
+	instance_type = "t3.small"
   key_name      = aws_key_pair.spot_key.key_name
   vpc_security_group_ids = [aws_security_group.sg.id]
   iam_instance_profile   = aws_iam_instance_profile.spot_profile.name
