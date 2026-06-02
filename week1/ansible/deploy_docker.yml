@@ -88,10 +88,45 @@
 
     # --- 4. BUILD AND DEPLOY CUSTOM BACKEND CONTAINERS ---
 
+    # NGINX
+    - name: Create nginx app build workspace on remote server
+      file:
+        path: /home/ubuntu/nginx-app-build
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Copy nginx Dockerfile to remote server
+      copy:
+        src: "{{ project_dir }}/docker/nginx/Dockerfile"
+        dest: /home/ubuntu/nginx-app-build/Dockerfile
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Build Custom nginx Server Image
+      community.docker.docker_image:
+        build:
+          path: /home/ubuntu/nginx-app-build
+        name: nginx-app-image
+        tag: latest
+        source: build
+
+    - name: Launch nginx Application Container
+      community.docker.docker_container:
+        name: nginx-app
+        image: nginx-app-image:latest
+        networks:
+          - name: containers-net
+        state: started
+        restart_policy: always
+        recreate: true
+
     # TOMCAT
     - name: Create Tomcat app build workspace on remote server
       file:
-        path: /home/ubuntu/tomcat-app-build
+        path: /home/ubuntu/java-app-build
         state: directory
         owner: ubuntu
         group: ubuntu
@@ -100,23 +135,23 @@
     - name: Copy tomcat Dockerfile to remote server
       copy:
         src: "{{ project_dir }}/docker/tomcat/Dockerfile"
-        dest: /home/ubuntu/tomcat-app-build/Dockerfile
+        dest: /home/ubuntu/java-app-build/Dockerfile
         owner: ubuntu
         group: ubuntu
         mode: '0644'
 
-    - name: Build Custom Tomcat Server Image
+    - name: Build Custom java Server Image
       community.docker.docker_image:
         build:
-          path: /home/ubuntu/tomcat-app-build
-        name: tomcat-app-image
+          path: /home/ubuntu/java-app-build
+        name: java-app-image
         tag: latest
         source: build
 
     - name: Launch Tomcat Application Container
       community.docker.docker_container:
-        name: tomcat-app
-        image: tomcat-app-image:latest
+        name: java-app
+        image: java-app-image:latest
         networks:
           - name: containers-net
         state: started
