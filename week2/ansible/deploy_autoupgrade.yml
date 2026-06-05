@@ -1,0 +1,69 @@
+---
+- name: Deploy RKE2 Auto-Upgrade Controller and Plans
+  hosts: master
+  become: yes
+  vars:
+    # Set the target RKE2 version you want to upgrade your cluster to
+    target_rke2_version: "v1.35.6+rke2r1"
+  tasks:
+    - name: Ensure python3-pip and PyYAML are installed on Master
+      apt:
+        name:
+          - python3-pip
+          - python3-yaml
+          - python3-kubernetes
+        state: present
+        update_cache: yes
+
+    - name: Install the System Upgrade Controller CRD definitions
+      kubernetes.core.k8s:
+        src: "https://github.com/rancher/system-upgrade-controller/releases/latest/download/crd.yaml"
+        kubeconfig: /etc/rancher/rke2/rke2.yaml
+
+    - name: Deploy the System Upgrade Controller core engine
+      kubernetes.core.k8s:
+        src: "https://github.com/rancher/system-upgrade-controller/releases/latest/download/system-upgrade-controller.yaml"
+        kubeconfig: /etc/rancher/rke2/rke2.yaml
+
+    - name: Apply Master and Worker rolling upgrade configuration plans
+      kubernetes.core.k8s:
+        kubeconfig: /etc/rancher/rke2/rke2.yaml
+        definition:
+          # --- PLAN 1: UPGRADE THE MASTER FIRST ---
+          - apiVersion: upgrade.cattle.io/v1
+            kind: Plan
+            metadata:
+              name: rke2-server-upgrade
+              namespace: system-upgrade
+            spec:
+              version: "{{ target_rke2_version }}"
+              concurrency: 1
+              nodeSelector:
+                matchExpressions:
+                  - key: node-role.kubernetes.io/control-plane
+                    operator: In
+                    values:
+                      - "true"
+              serviceAccountName: system-upgrade
+              upgrade:
+                image: rancher/rke2-upgrade
+
+          # --- PLAN 2: UPGRADE THE WORKER AFTER THE MASTER FINISHES ---
+          - apiVersion: upgrade.cattle.io/v1
+            kind: Plan
+            metadata:
+              name: rke2-agent-upgrade
+              namespace: system-upgrade
+            spec:
+              version: "{{ target_rke2_version }}"
+              concurrency: 1
+              prepare:
+                image: rancher/rke2-upgrade
+                args: ["prepare", "rke2-server-upgrade"]
+              nodeSelector:
+                matchExpressions:
+                  - key: node-role.kubernetes.io/control-plane
+                    operator: DoesNotExist
+              serviceAccountName: system-upgrade
+              upgrade:
+                image: rancher/rke2-upgrade

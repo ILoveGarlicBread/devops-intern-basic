@@ -1,0 +1,63 @@
+---
+- name: Phase 1 - Prepare All Cluster Nodes
+  hosts: cluster
+  become: yes
+  tasks:
+    - name: Ensure curl is installed
+      apt:
+        name: curl
+        state: present
+        update_cache: yes
+
+- name: Phase 2 - Install and Configure RKE2 Master
+  hosts: master
+  become: yes
+  tasks:
+    - name: Run RKE2 Server Installer Script
+      shell: "curl -sfL https://get.rke2.io | sh -"
+      args:
+        creates: /usr/local/bin/rke2
+
+    - name: Enable and start RKE2 Server Service
+      systemd:
+        name: rke2-server.service
+        state: started
+        enabled: yes
+
+    - name: Fetch the secure cluster join token
+      slurp:
+        src: /var/lib/rancher/rke2/server/node-token
+      register: master_token_encoded
+
+    - name: Save token as a global fact for the worker node
+      set_fact:
+        cluster_token: "{{ master_token_encoded.content | b64decode | trim }}"
+
+- name: Phase 3 - Install and Configure RKE2 Worker
+  hosts: worker
+  become: yes
+  tasks:
+    - name: Create RKE2 config directory
+      file:
+        path: /etc/rancher/rke2
+        state: directory
+        mode: '0755'
+
+    - name: Generate RKE2 Agent config file
+      copy:
+        dest: /etc/rancher/rke2/config.yaml
+        mode: '0600'
+        content: |
+          server: https://{{ hostvars[groups['master'][0]]['ansible_all_ipv4_addresses'][0] }}:9345
+          token: "{{ hostvars[groups['master'][0]]['cluster_token'] }}"
+
+    - name: Run RKE2 Agent Installer Script
+      shell: "curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE='agent' sh -"
+      args:
+        creates: /usr/local/bin/rke2
+
+    - name: Enable and start RKE2 Agent Service
+      systemd:
+        name: rke2-agent.service
+        state: started
+        enabled: yes

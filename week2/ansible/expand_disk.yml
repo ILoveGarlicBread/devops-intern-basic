@@ -1,0 +1,11 @@
+---
+- name: Expand Ubuntu Filesystem to Match New EBS Volume Size
+  hosts: cluster
+  become: yes
+  tasks:
+    - name: Expand the primary partition map
+      shell: growpart /dev/nvme0n1 1
+      ignore_errors: yes # Ignores if the partition map is already maxed out
+
+    - name: Resize the ext4 filesystem to claim the space
+      shell: resize2fs /dev/nvme0n1p1
