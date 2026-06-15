@@ -5,7 +5,7 @@
 
   vars:
     ansible_python_interpreter: "{{ ansible_playbook_python }}"
-    master_node_ip: "172.31.43.67"
+    master_node_ip: "{{ hostvars[groups['master'][0]]['ansible_host'] }}"
     ssh_user: "ubuntu"
     ssh_key_path: "~/.ssh/id_rsa"
 

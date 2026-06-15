@@ -1,0 +1,5 @@
+domain_name: "lblam.tma-demos.shop"
+fineract_subdomain: "fineract.lblam.tma-demos.shop"
+hosted_zone_id: "Z05312152ONGPJ6N7P6AL"
+cluster_token: "fineract-cluster-secret-2026"
+longhorn_storage_class: "longhorn"
