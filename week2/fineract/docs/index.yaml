@@ -1,0 +1,52 @@
+apiVersion: v1
+entries:
+  fineract:
+  - annotations:
+      charts.openshift.io/name: Fineract
+      charts.openshift.io/provider-display-name: maximilianoPizarro
+    apiVersion: v2
+    appVersion: v1.12.1
+    created: "2025-10-30T19:21:10.1171877-03:00"
+    description: Apache Fineract is an open source microfinance platform that provides
+      a robust and scalable solution for financial institutions, enabling the management
+      of loans, savings, customers and financial reporting
+    digest: f4fa43bcc0555032b56494d010d5934fce470f8084eb096a505c594ca3d1530a
+    home: https://github.com/apache/fineract
+    icon: https://fineract.apache.org/images/apache-fineract-logo.png
+    keywords:
+    - microfinance
+    kubeVersion: '>=1.31.13'
+    maintainers:
+    - email: maximiliano.pizarro.5@gmail.com
+      name: Maximiliano Pizarro
+    name: fineract
+    sources:
+    - https://github.com/maximilianoPizarro/fineract
+    type: application
+    urls:
+    - fineract-0.1.1.tgz
+    version: 0.1.1
+  - annotations:
+      charts.openshift.io/name: Fineract
+      charts.openshift.io/provider-display-name: maximilianoPizarro
+    apiVersion: v2
+    appVersion: v1.12.1
+    created: "2025-10-30T19:21:10.1141879-03:00"
+    description: 'Apache Fineract: A Platform for Microfinance'
+    digest: db86fe41c2631ed5a506a7325b412959c1a898e1a42b45588bcceb7875519b01
+    home: https://github.com/apache/fineract
+    icon: https://fineract.apache.org/images/apache-fineract-logo.png
+    keywords:
+    - microfinance
+    kubeVersion: '>=1.31.13'
+    maintainers:
+    - email: maximiliano.pizarro.5@gmail.com
+      name: Maximiliano Pizarro
+    name: fineract
+    sources:
+    - https://github.com/maximilianoPizarro/fineract
+    type: application
+    urls:
+    - fineract-0.1.0.tgz
+    version: 0.1.0
+generated: "2025-10-30T19:21:10.1111877-03:00"

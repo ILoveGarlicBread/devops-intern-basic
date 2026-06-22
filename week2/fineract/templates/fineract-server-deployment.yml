@@ -1,0 +1,125 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements. See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership. The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License. You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-backend
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: fineract
+    tier: backend
+  annotations:
+    app.openshift.io/connects-to: '[{"apiVersion":"apps/v1","kind":"Deployment","name":"fineract-default"},{"apiVersion":"apps/v1","kind":"Deployment","name":"fineract-tenants"}]'
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      app: fineract-backend
+      tier: backend
+      instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: fineract-backend
+        tier: backend
+        instance: {{ .Release.Name }}
+      annotations:
+        # Force a pod restart if secret values change
+        checksum/secrets: {{ include "secrets" . | sha256sum }}
+    spec:
+      {{- with .Values.fineractServer.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.fineractServer.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.fineractServer.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: fineract-backend
+          image: "{{ .Values.fineractServer.image.name }}:{{ .Values.fineractServer.image.tag }}"
+          envFrom:
+            - secretRef:
+                name: {{ .Release.Name | quote }}
+            - secretRef:
+                name: {{ .Release.Name }}-backend-config                
+          env:
+            # === Configuración de la Base de Datos de Plataforma (fineract_tenants / Servidor 1) ===
+            - name: FINERACT_HIKARI_USERNAME
+              value: {{ include "mysql_user" . }}
+            - name: FINERACT_HIKARI_PASSWORD
+              value: {{ include "mysql_password" . }}
+            - name: FINERACT_DEFAULT_TENANTDB_UID
+              value: {{ include "mysql_user" . }}
+            - name: FINERACT_DEFAULT_TENANTDB_PWD
+              value: {{ include "mysql_password" . }}                          
+
+            - name: FINERACT_HIKARI_HOST
+              value: "fineract-tenants.fineract.svc.cluster.local"
+            - name: FINERACT_DEFAULT_TENANTDB_HOSTNAME
+              value: "fineract-default.fineract.svc.cluster.local"
+            - name: FINERACT_HIKARI_CHANGED
+              value: "true"
+                # - name: fineract_tenants_url
+                #   value: "jdbc:mysql://fineract-tenants.fineract.svc.cluster.local:3306/fineract_tenants"
+            - name: FINERACT_HIKARI_JDBC_URL
+              value: "jdbc:mysql://fineract-tenants.fineract.svc.cluster.local:3306/fineract_tenants?serverTimezone=UTC&useSSL=false&autoReconnect=true&sessionVariables=FOREIGN_KEY_CHECKS=0&characterEncoding=UTF-8&useUnicode=true&zeroDateTimeBehavior=CONVERT_TO_NULL"
+
+            - name: JAVA_OPTS
+              value: "-Xms1024m -Xmx2048m"              
+            {{- if .Values.fineractServer.extraEnv }}
+            {{- range $key, $value := .Values.fineractServer.extraEnv }}
+            - name: {{ $key | quote}}
+              value: |-
+                {{- tpl $value $ | nindent 16 }}
+            {{- end }}
+            {{- end }}
+          ports:
+            - containerPort: 8080
+              name: http
+          volumeMounts:
+            - name: fineract-storage
+              mountPath: /.fineract/              
+          readinessProbe:
+            httpGet:
+              path: /fineract-provider/actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 900
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /fineract-provider/actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 900
+            timeoutSeconds: 10
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "2Gi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+      volumes:
+        - name: fineract-storage
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-backend-pvc

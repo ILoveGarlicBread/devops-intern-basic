@@ -1,0 +1,27 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  labels:
+    release: prometheus-stack
+  name: longhorn-prometheus-rules
+  namespace: monitoring
+spec:
+  groups:
+  - name: longhorn.rules
+    rules:
+    - alert: LonghornVolumeDegraded
+      annotations:
+        description: Longhorn volume {{$labels.volume}} is degraded.
+        summary: Longhorn volume is degraded.
+      expr: longhorn_volume_robustness == 2
+      for: 5m
+      labels:
+        severity: warning
+    - alert: LonghornVolumeFault
+      annotations:
+        description: Longhorn volume {{$labels.volume}} is in fault state.
+        summary: Longhorn volume is in fault state.
+      expr: longhorn_volume_robustness == 3
+      for: 5m
+      labels:
+        severity: critical

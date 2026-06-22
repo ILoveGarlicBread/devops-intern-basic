@@ -1,0 +1,33 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-ingress
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+    - hosts:
+        - fineract.lblam.tma-demos.shop
+      secretName: fineract-ssl-cert
+  rules:
+    - host: "fineract.lblam.tma-demos.shop"
+      http:
+        paths:
+          # Route all API traffic cleanly to the proxy port 3000
+          - path: /fineract-provider
+            pathType: Prefix
+            backend:
+              service:
+                name: fineract-nginx-service
+                port:
+                  number: 3000
+          # Route all static asset files cleanly to the proxy port 3000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: fineract-nginx-service
+                port:
+                  number: 3000

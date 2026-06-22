@@ -1,0 +1,54 @@
+image:
+  repository: bitnamilegacy/fluent-bit
+  tag: 4.0.8-debian-12-r0
+
+# Configure Fluent Bit daemonset
+daemonset:
+  enabled: true
+
+# Config to scrape RKE2/K8s logs and ship to OpenSearch
+config:
+  flush: 1
+  logLevel: info
+  inputs: |
+    [INPUT]
+        Name              tail
+        Tag               kube.*
+        Path              /var/log/containers/*.log
+        Parser            cri
+        DB                /tmp/flb_kube.db
+        Mem_Buf_Limit     50MB
+        Skip_Long_Lines   On
+        Refresh_Interval  10
+
+  filters: |
+    [FILTER]
+        Name                kubernetes
+        Match               kube.*
+        Kube_URL            https://kubernetes.default.svc:443
+        Kube_CA_File        /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        Kube_Token_File     /var/run/secrets/kubernetes.io/serviceaccount/token
+        Kube_Tag_Prefix     kube.var.log.containers.
+        Merge_Log           On
+        Merge_Log_Key       log_processed
+        Keep_Log            Off
+        K8S-Logging.Parser  On
+        K8S-Logging.Exclude On
+
+  outputs: |
+    [OUTPUT]
+        Name            http
+        Match           kube.*
+        Host            logstash.logging.svc.cluster.local
+        Port            8080
+        URI             /
+        Format          json
+
+  customParsers: |
+    [PARSER]
+        Name        cri
+        Format      regex
+        Regex       ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>[^ ]*) (?<log>.*)$
+        Time_Key    time
+        Time_Format %Y-%m-%dT%H:%M:%S.%L
+        Time_Keep   On

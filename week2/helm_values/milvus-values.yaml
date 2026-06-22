@@ -1,0 +1,129 @@
+global:
+  security:
+    allowInsecureImages: true
+  defaultStorageClass: longhorn-fixed
+
+milvus:
+  image:
+    repository: bitnamilegacy/milvus
+    tag: 2.6.0-debian-12-r1
+
+# Init settings
+initJob:
+  resourcesPreset: "none"
+  resources:
+    requests:
+      cpu: 20m
+      memory: 64Mi
+
+waitContainer:
+  resourcesPreset: "none"
+  resources:
+    requests:
+      cpu: 20m
+      memory: 64Mi
+
+# Core components
+coordinator:
+  nodeSelector:
+    workload: messaging
+  resourcesPreset: "none"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+dataNode:
+  nodeSelector:
+    workload: messaging
+  resourcesPreset: "none"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+queryNode:
+  nodeSelector:
+    workload: messaging
+  resourcesPreset: "none"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+streamingNode:
+  nodeSelector:
+    workload: messaging
+  resourcesPreset: "none"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+proxy:
+  nodeSelector:
+    workload: messaging
+  resourcesPreset: "none"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+attu:
+  image:
+    repository: bitnamilegacy/attu
+    tag: latest
+  nodeSelector:
+    workload: messaging
+  resourcesPreset: "none"
+  resources:
+    requests:
+      cpu: 20m
+      memory: 64Mi
+
+# Internal dependencies
+etcd:
+  image:
+    repository: bitnamilegacy/etcd
+    tag: latest
+  replicaCount: 1
+  nodeSelector:
+    workload: messaging
+  resourcesPreset: "none"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+minio:
+  image:
+    repository: bitnamilegacy/minio
+    tag: latest
+  nodeSelector:
+    workload: messaging
+  resourcesPreset: "none"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+  provisioning:
+    resourcesPreset: "none"
+    resources:
+      requests:
+        cpu: 20m
+        memory: 64Mi
+kafka:
+  enabled: true
+  image:
+    repository: bitnamilegacy/kafka
+    tag: latest
+  controller:
+    nodeSelector:
+      workload: messaging
+    resourcesPreset: "none"
+    resources:
+      requests:
+        cpu: 50m
+        memory: 256Mi
+
+# General settings
+cluster:
+  enabled: false
+persistence:
+  enabled: true
+  storageClass: longhorn-fixed
+  size: 8Gi

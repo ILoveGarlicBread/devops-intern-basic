@@ -1,0 +1,49 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: fineractserver-anyuid-scc
+  namespace: {{ .Release.Namespace }}
+rules:
+- apiGroups: ["security.openshift.io"]
+  resourceNames: ["anyuid"]
+  resources: ["securitycontextconstraints"]
+  verbs: ["use"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: fineractserver-anyuid-scc-binding
+  namespace: {{ .Release.Namespace }}
+subjects:
+- kind: ServiceAccount
+  name: fineractserver-sa
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: fineractserver-anyuid-scc
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: fineractui-anyuid-scc
+  namespace: {{ .Release.Namespace }}
+rules:
+- apiGroups: ["security.openshift.io"]
+  resourceNames: ["anyuid"]
+  resources: ["securitycontextconstraints"]
+  verbs: ["use"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: fineractui-anyuid-scc-binding
+  namespace: {{ .Release.Namespace }}
+subjects:
+- kind: ServiceAccount
+  name: fineractui-sa
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: fineractui-anyuid-scc
+  apiGroup: rbac.authorization.k8s.io

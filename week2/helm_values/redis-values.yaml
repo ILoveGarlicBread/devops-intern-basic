@@ -1,0 +1,15 @@
+architecture: standalone
+auth:
+  enabled: false
+master:
+  nodeSelector:
+    workload: fineract
+  resources:
+    limits:
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+replica:
+  nodeSelector:
+    workload: fineract

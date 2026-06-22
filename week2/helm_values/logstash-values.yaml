@@ -1,0 +1,36 @@
+image:
+  repository: bitnamilegacy/logstash
+  tag: 9.1.2-debian-12-r0
+
+# Limit JVM memory for Logstash to fit comfortably on Worker-2
+extraEnvVars:
+  - name: LS_JAVA_OPTS
+    value: "-Xmx512m -Xms512m"
+
+nodeSelector:
+  workload: apps
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 512Mi
+  limits:
+    memory: 1024Mi
+
+input: |-
+  http {
+    port => 8080
+    codec => "json"
+  }
+
+filter: |-
+  if [message] =~ /kube-probe/ {
+    drop { }
+  }
+output: |-
+  elasticsearch {
+    hosts => ["http://elasticsearch.logging.svc.cluster.local:9200"]
+    index => "fineract-logs-%{+YYYY.MM.dd}"
+    user => "elastic"
+    password => "password123"
+  }

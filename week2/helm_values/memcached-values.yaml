@@ -1,0 +1,13 @@
+global:
+  security:
+    allowInsecureImages: true
+image:
+  repository: bitnamilegacy/memcached
+  tag: 1.6.39
+nodeSelector:
+  workload: fineract
+resources:
+  limits:
+    memory: 128Mi
+  requests:
+    cpu: 50m

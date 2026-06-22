@@ -68,7 +68,7 @@
           # Fetch the brand-new public IP assigned on this boot cycle
           PUBLIC_IP=$(curl -s https://checkip.amazonaws.com)
           ZONE_ID="Z05312152ONGPJ6N7P6AL"
-          DOMAIN="*.lblam.tma-demos.shop"
+          DOMAIN="fineract.lblam.tma-demos.shop"
 
           # Build the payload file
           cat << EOF > /tmp/route53-update.json

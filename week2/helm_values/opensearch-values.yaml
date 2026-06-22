@@ -1,0 +1,65 @@
+global:
+  security:
+    allowInsecureImages: true
+
+# Use legacy frozen images from Bitnami
+image:
+  repository: bitnamilegacy/opensearch
+  tag: 3.2.0-debian-12-r0
+
+sysctlImage:
+  repository: bitnamilegacy/os-shell
+  tag: 12-debian-12-r51
+
+# extraConfig removed for compatibility with OpenSearch 3.2.0
+
+# Enable a single combined master node (runs master, data, ingest, and coordinating roles)
+master:
+  masterOnly: false
+  replicaCount: 1
+  heapSize: 2048m
+  nodeSelector:
+    workload: apps
+  persistence:
+    enabled: true
+    storageClass: longhorn-fixed
+    size: 15Gi
+  resourcesPreset: "none"
+  resources:
+    requests:
+      cpu: 500m
+      memory: 4096Mi
+    limits:
+      memory: 6144Mi
+
+# Disable standalone data, coordinating, and ingest nodes
+data:
+  replicaCount: 0
+
+coordinating:
+  replicaCount: 0
+
+ingest:
+  replicaCount: 0
+
+# Enable OpenSearch Dashboards (UI client)
+dashboards:
+  enabled: false
+  replicaCount: 1
+  heapSize: 512m
+  nodeSelector:
+    workload: apps
+  resourcesPreset: "none"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      memory: 1024Mi
+  image:
+    repository: bitnamilegacy/opensearch-dashboards
+    tag: 3.2.0-debian-12-r0
+
+# Disable Security Plugin on OpenSearch by default for simplified local configuration
+security:
+  enabled: false

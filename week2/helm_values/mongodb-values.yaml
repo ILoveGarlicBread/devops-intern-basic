@@ -1,0 +1,18 @@
+auth:
+  rootPassword: password123
+global:
+  security:
+    allowInsecureImages: true
+image:
+  repository: bitnamilegacy/mongodb
+  tag: 8.0.13
+nodeSelector:
+  workload: apps
+persistence:
+  mountPath: /bitnami/mongodb
+  size: 4Gi
+resources:
+  limits:
+    memory: 1024Mi
+  requests:
+    cpu: 150m

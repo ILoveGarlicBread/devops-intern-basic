@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fineract-ui-config
+  namespace: fineract
+data:
+  configs.json: |
+    {
+      "apiProtocol": "http",
+      "apiServerName": "fineract.lblam.tma-demos.shop",
+      "apiPort": "80",
+      "apiContextRoot": "fineract-provider",
+      "tenantIdentifier": "default"
+    }

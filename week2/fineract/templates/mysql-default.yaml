@@ -1,0 +1,170 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: fineract-default
+  labels:
+    app: fineract-default
+    app.kubernetes.io/name: fineract-default
+    app.kubernetes.io/part-of: fineract-tenants
+data:
+  # Base de datos de negocio (fineract_default)
+  database-name: ZmluZXJhY3RfZGVmYXVsdA==
+  database-password: ZmluZXJhY3Q=         
+  database-root-password: ZmluZXJhY3Q=    
+  database-user: ZmluZXJhY3Q=             
+type: Opaque
+#---
+#apiVersion: v1
+#kind: PersistentVolumeClaim
+#metadata:
+#  name: fineract-default-data
+#  labels:
+#    app: fineract-default
+#    app.kubernetes.io/instance: fineract-default
+#    app.kubernetes.io/name: fineract-default
+#    app.kubernetes.io/part-of: fineract-tenants
+#spec:
+#  accessModes:
+#    - ReadWriteOnce
+#  volumeMode: Filesystem
+#  resources:
+#    requests:
+#      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: fineract-default
+  labels:
+    app: fineract-default
+    app.kubernetes.io/component: fineract-default
+    app.kubernetes.io/instance: fineract-default
+    app.kubernetes.io/name: fineract-default
+    app.kubernetes.io/part-of: fineract-tenants
+    app.openshift.io/runtime: mariadb
+spec:
+  serviceName: fineract-default
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: fineract-default
+  volumeClaimTemplates:
+    - metadata:
+        name: fineract-default-data  
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        volumeMode: Filesystem
+        resources:
+          requests:
+            storage: 1Gi
+  template:
+    metadata:
+      labels:
+        app: fineract-default
+        app.openshift.io/runtime: mariadb
+        deployment: fineract-default
+
+    spec:
+      {{- with .Values.mysql.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mysql.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mysql.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: fineractserver-sa      
+      containers:
+        - resources:
+            limits:
+              memory: 512Mi
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - '-i'
+                - '-c'
+                - MYSQL_PWD="$MYSQL_PASSWORD" mariadb-admin ping -u $MYSQL_USER
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          terminationMessagePath: /dev/termination-log
+          name: fineract-default
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - '-i'
+                - '-c'
+                - MYSQL_PWD="$MYSQL_PASSWORD" mariadb-admin ping -u $MYSQL_USER
+            initialDelaySeconds: 30
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          env:
+            # Apuntando al NUEVO Secret 'fineract-default'
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: fineract-default
+                  key: database-user
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: fineract-default
+                  key: database-password
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: fineract-default
+                  key: database-root-password
+            - name: MYSQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: fineract-default
+                  key: database-name
+            - name: MARIADB_ALLOW_EMPTY_ROOT_PASSWORD
+              value: "false"
+          ports:
+            - containerPort: 3306
+              protocol: TCP
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: fineract-default-data
+              mountPath: /var/lib/mysql
+          terminationMessagePolicy: File
+          image: mariadb:11.4
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      schedulerName: default-scheduler
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: fineract-default
+    app.kubernetes.io/component: fineract-default
+    app.kubernetes.io/instance: fineract-default
+    app.kubernetes.io/name: fineract-default
+    app.kubernetes.io/part-of: fineract-tenants
+  name: fineract-default
+spec:
+  ports:
+    - name: 3306-tcp
+      protocol: TCP
+      port: 3306
+      targetPort: 3306
+  selector:
+    app: fineract-default
+    deployment: fineract-default
