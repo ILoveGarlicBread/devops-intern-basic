@@ -27,6 +27,17 @@ filter: |-
   if [message] =~ /kube-probe/ {
     drop { }
   }
+
+  grok {
+    match => {
+      "message" => [
+        "^%{TIMESTAMP_ISO8601:fineract_timestamp} - %{LOGLEVEL:fineract_log_level}\s+%{NUMBER:fineract_pid}\s+\[\s*%{DATA:fineract_tenant}\]\s+---\s+\[\s*%{DATA:fineract_thread}\]\s+%{DATA:fineract_class}\s+:\s+%{GREEDYDATA:fineract_message}",
+        "^%{DAY} %{MONTH} %{MONTHDAY} %{TIME} %{TZ} %{YEAR} %{LOGLEVEL:fineract_log_level}: \[SLOW QUERY\] %{GREEDYDATA:fineract_slow_query}"
+      ]
+    }
+    # If the log successfully parses, we can remove the original bulky "message" field if we want,
+    # but for now we'll keep it so you can see the before-and-after in Kibana.
+  }
 output: |-
   elasticsearch {
     hosts => ["http://elasticsearch.logging.svc.cluster.local:9200"]

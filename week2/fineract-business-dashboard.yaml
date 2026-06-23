@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fineract-business-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+    app.kubernetes.io/instance: prometheus-stack
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kube-prometheus-stack
+    app: kube-prometheus-stack-grafana
+    release: prometheus-stack
+data:
+  fineract-business.json: |-
+    {
+      "title": "Fineract Business Metrics",
+      "tags": ["fineract", "business"],
+      "timezone": "browser",
+      "refresh": "5s",
+      "panels": [
+        {
+          "type": "stat",
+          "title": "Total Clients",
+          "gridPos": { "h": 8, "w": 6, "x": 0, "y": 0 },
+          "targets": [
+            { "expr": "fineract_clients_total", "legendFormat": "Clients" }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Total Accounts",
+          "gridPos": { "h": 8, "w": 6, "x": 6, "y": 0 },
+          "targets": [
+            { "expr": "fineract_accounts_total", "legendFormat": "Accounts" }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Total Loans",
+          "gridPos": { "h": 8, "w": 6, "x": 12, "y": 0 },
+          "targets": [
+            { "expr": "fineract_loans_total", "legendFormat": "Loans" }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Total Cards",
+          "gridPos": { "h": 8, "w": 6, "x": 18, "y": 0 },
+          "targets": [
+            { "expr": "fineract_cards_total", "legendFormat": "Cards" }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Client & Account Growth Over Time",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+          "targets": [
+            { "expr": "fineract_clients_total", "legendFormat": "Clients" },
+            { "expr": "fineract_accounts_total", "legendFormat": "Accounts" }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Loan & Card Growth Over Time",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+          "targets": [
+            { "expr": "fineract_loans_total", "legendFormat": "Loans" },
+            { "expr": "fineract_cards_total", "legendFormat": "Cards" }
+          ]
+        }
+      ]
+    }

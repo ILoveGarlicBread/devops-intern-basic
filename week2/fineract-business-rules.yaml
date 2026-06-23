@@ -1,0 +1,35 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: fineract-business-alerts
+  namespace: monitoring
+  labels:
+    release: prometheus-stack
+spec:
+  groups:
+  - name: fineract.business.rules
+    rules:
+    - alert: FineractZeroClients
+      expr: fineract_clients_total == 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "No clients found in Fineract database"
+        description: "Fineract database is reporting 0 clients for 5 minutes. Possible data loss or exporter connection issue."
+    - alert: FineractHighLoanVolume
+      expr: fineract_loans_total > 50
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High number of loans in Fineract"
+        description: "There are currently {{ $value }} loans in Fineract, exceeding the threshold."
+    - alert: FineractHighAccountVolume
+      expr: fineract_accounts_total > 100
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High number of savings accounts in Fineract"
+        description: "There are currently {{ $value }} savings accounts in Fineract."

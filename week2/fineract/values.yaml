@@ -150,10 +150,7 @@ mysql:
   # -- Node tolerations for pod assignment
   tolerations: []
   auth:
-    # -- Please change these...
-    rootPassword: 'fineract_tenants'
-    # -- Please change these...
-    password: 'fineract'
+    existingSecret: 'fineract-db-passwords'
     # -- Fineract db user
     username: fineract
 

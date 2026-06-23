@@ -35,4 +35,19 @@ echo "Applying Longhorn Monitoring manifests..."
 kubectl apply -f longhorn-prometheus-rules.yaml
 kubectl apply -f longhorn-servicemonitor.yaml
 
+# 7. Deploy Fineract Business Metrics Exporter and Dashboard
+echo "Applying Fineract Business Metrics manifests..."
+kubectl apply -f ../fineract-business-exporter.yaml
+kubectl apply -f ../fineract-business-rules.yaml
+kubectl apply -f ../fineract-business-dashboard.yaml
+
+# 8. Patch Alertmanager Generated Configuration to fix PrometheusOperatorSyncFailed
+# The kube-prometheus-stack base chart often passes a default empty string for slack_api_url,
+# which clashes with slack_api_url_file and breaks the operator sync.
+echo "Patching AlertManager generated secret..."
+kubectl get secret alertmanager-prometheus-stack-kube-prom-alertmanager -n monitoring -o jsonpath='{.data.alertmanager\.yaml}' | base64 -d > am.yaml
+sed -i '/slack_api_url: ""/d' am.yaml
+kubectl create secret generic alertmanager-prometheus-stack-kube-prom-alertmanager -n monitoring --from-file=alertmanager.yaml=am.yaml --dry-run=client -o yaml | kubectl apply -f -
+rm -f am.yaml
+
 echo "Deployment complete! Use 'kubectl get pods -n monitoring' to check the status."
