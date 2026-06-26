@@ -1,0 +1,104 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fineract-business-exporter-config
+  namespace: fineract
+data:
+  sql_exporter.yml: |
+    target:
+      data_source_name: '${DATA_SOURCE_NAME}'
+      collectors: [fineract_business]
+    collectors:
+      - collector_name: fineract_business
+        metrics:
+          - metric_name: fineract_clients_total
+            type: gauge
+            help: 'Total clients'
+            values: [count]
+            query: 'SELECT COUNT(*) as count FROM m_client;'
+          - metric_name: fineract_accounts_total
+            type: gauge
+            help: 'Total accounts'
+            values: [count]
+            query: 'SELECT COUNT(*) as count FROM m_savings_account;'
+          - metric_name: fineract_loans_total
+            type: gauge
+            help: 'Total loans'
+            values: [count]
+            query: 'SELECT COUNT(*) as count FROM m_loan;'
+          - metric_name: fineract_cards_total
+            type: gauge
+            help: 'Total cards'
+            values: [count]
+            query: 'SELECT 0 as count;'
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fineract-business-exporter
+  namespace: fineract
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fineract-business-exporter
+  template:
+    metadata:
+      labels:
+        app: fineract-business-exporter
+    spec:
+      containers:
+        - name: exporter
+          image: burningalchemist/sql_exporter:latest
+          args: ["-config.file=/config/sql_exporter.yml"]
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: fineract-db-passwords
+                  key: password
+            - name: DATA_SOURCE_NAME
+              value: "mysql://root:$(DB_PASSWORD)@fineract-default.fineract.svc.cluster.local:3306/fineract_default"
+          ports:
+            - containerPort: 9399
+              name: metrics
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      volumes:
+        - name: config
+          configMap:
+            name: fineract-business-exporter-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fineract-business-exporter
+  namespace: fineract
+  labels:
+    app: fineract-business-exporter
+spec:
+  ports:
+    - port: 9399
+      targetPort: metrics
+      name: metrics
+  selector:
+    app: fineract-business-exporter
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: fineract-business-exporter
+  namespace: monitoring
+  labels:
+    release: prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app: fineract-business-exporter
+  namespaceSelector:
+    matchNames:
+      - fineract
+  endpoints:
+    - port: metrics
+      interval: 30s

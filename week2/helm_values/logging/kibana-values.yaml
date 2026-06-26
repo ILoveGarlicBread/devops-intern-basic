@@ -1,0 +1,30 @@
+elasticsearch:
+  hosts:
+    - "elasticsearch"
+  port: 9200
+  security:
+    auth:
+      enabled: false
+
+ingress:
+  enabled: true
+  hostname: logging.lblam.tma-demos.shop
+  ingressClassName: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  tls: true
+
+resourcesPreset: "none"
+resources:
+  requests:
+    cpu: 100m
+    memory: 512Mi
+  limits:
+    memory: 1024Mi
+
+image:
+  repository: bitnamilegacy/kibana
+  tag: 9.1.2-debian-12-r0
+
+nodeSelector:
+  workload: apps

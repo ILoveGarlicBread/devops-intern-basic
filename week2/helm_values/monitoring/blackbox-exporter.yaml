@@ -1,0 +1,165 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: blackbox-config
+  namespace: monitoring
+data:
+  blackbox.yml: |
+    modules:
+      http_2xx:
+        prober: http
+        timeout: 5s
+        http:
+          valid_status_codes: [200, 301, 302]
+          method: GET
+          no_follow_redirects: false
+
+      http_fineract:
+        prober: http
+        timeout: 5s
+        http:
+          valid_status_codes: [200, 301, 302]
+          fail_if_body_not_matches_regexp:
+            - ".*[Ff]ineract.*|.*[Mm]ifos.*"
+          no_follow_redirects: false
+
+      http_grafana:
+        prober: http
+        timeout: 5s
+        http:
+          valid_status_codes: [200, 301, 302]
+          fail_if_body_not_matches_regexp:
+            - ".*Grafana.*"
+          no_follow_redirects: false
+
+      http_kibana:
+        prober: http
+        timeout: 5s
+        http:
+          valid_status_codes: [200, 301, 302]
+          fail_if_body_not_matches_regexp:
+            - ".*Elastic.*"
+          no_follow_redirects: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blackbox-exporter
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blackbox-exporter
+  template:
+    metadata:
+      labels:
+        app: blackbox-exporter
+    spec:
+      dnsPolicy: "None"
+      dnsConfig:
+        nameservers:
+          - 8.8.8.8
+          - 1.1.1.1
+      containers:
+        - name: blackbox-exporter
+          image: quay.io/prometheus/blackbox-exporter:v0.25.0
+          args:
+            - "--config.file=/config/blackbox.yml"
+          ports:
+            - containerPort: 9115
+              name: http
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      volumes:
+        - name: config
+          configMap:
+            name: blackbox-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blackbox-exporter
+  namespace: monitoring
+  labels:
+    app: blackbox-exporter
+spec:
+  ports:
+    - port: 9115
+      targetPort: http
+      name: http
+  selector:
+    app: blackbox-exporter
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: fineract-probe
+  namespace: monitoring
+  labels:
+    release: prometheus-stack
+spec:
+  jobName: blackbox-exporter
+  interval: 60s
+  module: http_fineract
+  prober:
+    url: blackbox-exporter.monitoring.svc.cluster.local:9115
+  targets:
+    staticConfig:
+      static:
+        - https://fineract.lblam.tma-demos.shop
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: grafana-probe
+  namespace: monitoring
+  labels:
+    release: prometheus-stack
+spec:
+  jobName: blackbox-exporter
+  interval: 60s
+  module: http_grafana
+  prober:
+    url: blackbox-exporter.monitoring.svc.cluster.local:9115
+  targets:
+    staticConfig:
+      static:
+        - https://monitoring.lblam.tma-demos.shop
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: kibana-probe
+  namespace: monitoring
+  labels:
+    release: prometheus-stack
+spec:
+  jobName: blackbox-exporter
+  interval: 60s
+  module: http_kibana
+  prober:
+    url: blackbox-exporter.monitoring.svc.cluster.local:9115
+  targets:
+    staticConfig:
+      static:
+        - https://logging.lblam.tma-demos.shop
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: external-probe
+  namespace: monitoring
+  labels:
+    release: prometheus-stack
+spec:
+  jobName: blackbox-exporter
+  interval: 60s
+  module: http_2xx
+  prober:
+    url: blackbox-exporter.monitoring.svc.cluster.local:9115
+  targets:
+    staticConfig:
+      static:
+        - https://github.com/

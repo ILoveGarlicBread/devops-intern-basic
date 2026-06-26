@@ -1,0 +1,37 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: blackbox-rules
+  namespace: monitoring
+  labels:
+    release: prometheus-stack # CRITICAL: Match your Prometheus stack label
+spec:
+  groups:
+    - name: blackbox.rules
+      rules:
+        - alert: WebsiteDown
+          expr: probe_success == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Website down: {{ $labels.instance }}"
+            description: "Blackbox probe failed for {{ $labels.instance }}. Site is unreachable for >2 minutes."
+            
+        - alert: SSLCertificateExpiringSoon
+          expr: probe_ssl_earliest_cert_expiry - time() < 86400 * 7 # 7 days
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "SSL cert expiring soon: {{ $labels.instance }}"
+            description: "The SSL certificate for {{ $labels.instance }} expires in less than 7 days."
+            
+        - alert: HighLatency
+          expr: probe_duration_seconds > 5
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Slow response from {{ $labels.instance }}"
+            description: "Website {{ $labels.instance }} took more than 5 seconds to load."
