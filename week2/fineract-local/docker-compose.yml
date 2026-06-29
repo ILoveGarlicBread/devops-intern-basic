@@ -1,0 +1,62 @@
+    version: '3.8'
+
+    services:
+      mysql:
+        image: mysql:8.0
+        environment:
+          - MYSQL_ROOT_PASSWORD=password123
+          - MYSQL_USER=fineract
+          - MYSQL_PASSWORD=password123
+        ports:
+          - "3306:3306" 
+        volumes:
+          - mysql_data:/var/lib/mysql
+          - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+        deploy:
+          resources:
+            limits:
+              cpus: '1.0'
+              memory: 1G
+
+      fineract-server:
+        image: apache/fineract:1.12.1
+        depends_on:
+          - mysql
+        environment:
+          - FINERACT_DEFAULT_TENANTDB_HOSTNAME=mysql # Links to DB via internal DNS
+          - FINERACT_DEFAULT_TENANTDB_PORT=3306
+          - FINERACT_DEFAULT_TENANTDB_UID=fineract
+          - FINERACT_DEFAULT_TENANTDB_PWD=password123
+          - DRIVERCLASS_NAME=com.mysql.cj.jdbc.Driver
+          - PROTOCOL=jdbc
+          - SUB_PROTOCOL=mysql
+          - fineract_tenants_driver=com.mysql.cj.jdbc.Driver
+          - LOG_OUTPUT_TYPE=console_plain
+          - fineract_tenants_url=jdbc:mysql://mysql:3306/fineract_tenants?serverTimezone=UTC&useUnicode=true&characterEncoding=UTF-8
+          - fineract_tenants_uid=fineract
+          - fineract_tenants_pwd=password123
+        ports:
+          - "8443:8443" # Open so the browser/UI can reach the API
+        deploy:
+          resources:
+            limits:
+              cpus: '2.0'
+              memory: 4G
+
+      fineract-ui:
+        image: openmf/community-app:latest
+        ports:
+          - "9090:80" 
+        volumes:
+          - ./patch-url.sh:/docker-entrypoint.d/99-patch-url.sh
+        deploy:
+          resources:
+            limits:
+              cpus: '0.5'
+              memory: 256M
+
+    volumes:
+      mysql_data:
+
+
+
