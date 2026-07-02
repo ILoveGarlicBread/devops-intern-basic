@@ -32,14 +32,14 @@ data:
             - ".*Grafana.*"
           no_follow_redirects: false
 
-      http_kibana:
-        prober: http
-        timeout: 5s
-        http:
-          valid_status_codes: [200, 301, 302]
-          fail_if_body_not_matches_regexp:
-            - ".*Elastic.*"
-          no_follow_redirects: false
+#      http_kibana:
+#        prober: http
+#        timeout: 5s
+#        http:
+#          valid_status_codes: [200, 301, 302]
+#          fail_if_body_not_matches_regexp:
+#            - ".*Elastic.*"
+#          no_follow_redirects: false
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -127,24 +127,24 @@ spec:
     staticConfig:
       static:
         - https://monitoring.lblam.tma-demos.shop
----
-apiVersion: monitoring.coreos.com/v1
-kind: Probe
-metadata:
-  name: kibana-probe
-  namespace: monitoring
-  labels:
-    release: prometheus-stack
-spec:
-  jobName: blackbox-exporter
-  interval: 60s
-  module: http_kibana
-  prober:
-    url: blackbox-exporter.monitoring.svc.cluster.local:9115
-  targets:
-    staticConfig:
-      static:
-        - https://logging.lblam.tma-demos.shop
+#---
+#apiVersion: monitoring.coreos.com/v1
+#kind: Probe
+#metadata:
+#  name: kibana-probe
+#  namespace: monitoring
+#  labels:
+#    release: prometheus-stack
+#spec:
+#  jobName: blackbox-exporter
+#  interval: 60s
+#  module: http_kibana
+#  prober:
+#    url: blackbox-exporter.monitoring.svc.cluster.local:9115
+#  targets:
+#    staticConfig:
+#      static:
+#        - https://logging.lblam.tma-demos.shop
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: Probe

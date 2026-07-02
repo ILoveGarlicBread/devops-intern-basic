@@ -68,11 +68,17 @@ spec:
             - name: FINERACT_HIKARI_USERNAME
               value: {{ include "mysql_user" . }}
             - name: FINERACT_HIKARI_PASSWORD
-              value: {{ include "mysql_password" . }}
+              valueFrom:
+                secretKeyRef:
+                  name: fineract-default
+                  key: database-password
             - name: FINERACT_DEFAULT_TENANTDB_UID
               value: {{ include "mysql_user" . }}
             - name: FINERACT_DEFAULT_TENANTDB_PWD
-              value: {{ include "mysql_password" . }}                          
+              valueFrom:
+                secretKeyRef:
+                  name: fineract-default
+                  key: database-password
 
             - name: FINERACT_HIKARI_HOST
               value: "fineract-tenants.fineract.svc.cluster.local"

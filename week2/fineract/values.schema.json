@@ -6,7 +6,7 @@
       "additionalProperties": false,
       "properties": {
         "extraEnv": {
-          "additionalProperties": false,
+          "additionalProperties": true,
           "description": "Dictionary of key/value pairs to pass as environment variables to the backend pods\nThey will be evaluated as Helm templates",
           "properties": {
             "DRIVERCLASS_NAME": {
@@ -419,7 +419,7 @@
           "type": "array"
         },
         "auth": {
-          "additionalProperties": false,
+          "additionalProperties": true,
           "properties": {
             "password": {
               "default": "fineract",
@@ -444,8 +444,6 @@
             }
           },
           "required": [
-            "rootPassword",
-            "password",
             "username"
           ],
           "title": "auth",

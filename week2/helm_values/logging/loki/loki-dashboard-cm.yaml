@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-kubernetes-logs
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  kubernetes-logs.json: |-
+    {
+      "title": "Kubernetes Logs Explorer (Loki)",
+      "description": "Loki log metrics and errors",
+      "tags": ["logs", "kubernetes", "loki"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "refresh": "10s",
+      "templating": {
+        "list": [
+          {
+            "name": "namespace",
+            "type": "textbox",
+            "query": "",
+            "label": "Namespace"
+          },
+          {
+            "name": "pod",
+            "type": "textbox",
+            "query": "",
+            "label": "Pod"
+          }
+        ]
+      },
+      "panels": [
+        {
+          "type": "timeseries",
+          "title": "Log Rate by Namespace (Lines/s)",
+          "gridPos": { "h": 10, "w": 12, "x": 0, "y": 0 },
+          "targets": [
+            {
+              "datasource": { "type": "loki", "uid": "Loki" },
+              "expr": "sum by(k8s_namespace_name) (rate({k8s_namespace_name=~`.*$namespace.*`, k8s_pod_name=~`.*$pod.*`} [2m]))",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Error Rate by Pod (Errors/s)",
+          "gridPos": { "h": 10, "w": 12, "x": 12, "y": 0 },
+          "targets": [
+            {
+              "datasource": { "type": "loki", "uid": "Loki" },
+              "expr": "sum by(k8s_pod_name) (rate({k8s_namespace_name=~`.*$namespace.*`, k8s_pod_name=~`.*$pod.*`} |~ `(?i)error|exception|fail` [2m]))",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "type": "logs",
+          "title": "Recent Errors",
+          "gridPos": { "h": 12, "w": 24, "x": 0, "y": 10 },
+          "targets": [
+            {
+              "datasource": { "type": "loki", "uid": "Loki" },
+              "expr": "{k8s_namespace_name=~`.*$namespace.*`, k8s_pod_name=~`.*$pod.*`} |~ `(?i)error|exception|fail`",
+              "refId": "A"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "wrapLogMessage": true,
+            "sortOrder": "Descending"
+          }
+        }
+      ]
+    }

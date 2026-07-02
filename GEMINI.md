@@ -111,10 +111,10 @@ This environment utilizes a robust, decoupled logging and monitoring pipeline se
 
 ### 1. Centralized Logging (OTel + Loki Stack)
 - **Namespace:** `logging`
-- **OpenTelemetry Agent (DaemonSet):** Runs on every node. Uses the `filelog` receiver to tail `/var/log/pods/*`. Extracts Kubernetes metadata via `regex_parser` and perfectly stitches together multiline Java stack traces using the `recombine` operator.
+- **OpenTelemetry Agent (DaemonSet):** Runs on every node. Uses the `filelog` receiver to tail `/var/log/pods/*`. Extracts Kubernetes metadata via `regex_parser` and perfectly stitches together multiline Java stack traces using the `recombine` operator. Uses a `transform` processor to correctly promote log attributes (like pod and namespace names) to resource attributes so Loki can index them as labels (e.g., `service_name`).
 - **OpenTelemetry Gateway (Deployment):** Aggregation layer that batches logs from the agents and exports them natively via `otlphttp` to the Loki distributor.
 - **Grafana Loki (Distributed):** Lightweight log storage. Replaced Elasticsearch. Stores raw text without full-text indexing to save massive amounts of RAM and CPU, indexing only Kubernetes labels.
-- **Grafana (Explore):** Replaced Kibana. Serves as the UI for LogQL queries and dashboards. Exposed via TLS at `https://monitoring.lblam.tma-demos.shop/`.
+- **Grafana (Explore):** Replaced Kibana. Serves as the UI for LogQL queries and dashboards. Exposed via TLS at `https://monitoring.lblam.tma-demos.shop/`. The Loki datasource URL points directly to `http://loki-read.logging.svc.cluster.local:3100` for querying.
 
 ### 1b. Legacy Centralized Logging (EFK Stack - Decommissioned)
 *Note: This stack was removed because Elasticsearch consumed too much RAM (3GB+) for this cluster's capacity.*
@@ -142,6 +142,14 @@ This environment utilizes a robust, decoupled logging and monitoring pipeline se
 - [x] **Logstash Filtering & Parsing:** Experiment with Logstash filters to identify and drop redundant or unnecessary log patterns, and parse unstructured text into structured JSON fields.
   - *Implementation:* Dropped noisy `kube-probe` health check logs to save storage. Implemented advanced **Grok** patterns in `logstash-values.yaml` to dynamically parse raw Java Spring Boot logs (and Slow Query warnings) from Fineract into discrete, searchable Elasticsearch columns (`fineract_log_level`, `fineract_class`, `fineract_thread`).
 - [ ] **General Practice:** Continue practicing cluster administration and operations to build solid, hands-on understanding.
+
+### Backup & Restore Strategy (Velero & Logical Backups)
+- [x] **Velero Integration:** Learn and deploy Velero to perform cluster-level backups and restores.
+- [x] **Logical Database Backups:** Write Kubernetes Jobs/CronJobs to perform logical backups (`mysqldump` / `pg_dump`) of the Fineract databases, tar/compress the data, and upload directly to an AWS S3 bucket (or alternative).
+- [ ] **Disaster Recovery Simulation:** Simulate a catastrophic failure ("destroy" the Fineract deployment completely) and attempt to recover the system using both Velero and logical methods.
+- [ ] **Backup Strategy Comparison:** Analyze and compare the differences, pros, and cons of Velero (volume/snapshot-based) versus Logical Backups (database dump-based).
+- [ ] **Kanister Research:** Investigate Kanister (application-level data management) to understand its capabilities and evaluate its ease of use.
+- [ ] **Storage Cost Optimization (Wasabi):** Research Wasabi Cloud Storage as an alternative to AWS S3, comparing pricing to learn about different tech stacks in the market.
 
 ### Recommendations for the Prometheus Monitoring Stack
 - [x] **Maximize Exporters:** When deploying the Prometheus stack, aim to configure as many exporters as possible. Every deployed service should ideally have a corresponding exporter to be monitored in Grafana.
@@ -183,7 +191,10 @@ We have secured **3 critical secrets** that were previously exposed in plain tex
   - **Bypassed Kubernetes DNS Shortcuts:** Injected `dnsPolicy: None` and nameserver `8.8.8.8` to force Blackbox probes to leave the cluster and test the external AWS Route53/Load Balancer properly.
   - **Fixed Soft Fails (Regex Body Matching):** Split the generic HTTP probe into 4 isolated `Probe` CRDs using custom modules. The exporter now explicitly scans the HTML body for `[Ff]ineract`, `Grafana`, and `Elastic` to prevent false positive `HTTP 200 OK` errors.
   - **Fixed Dashboard Clutter:** Added `jobName: blackbox-exporter` to group the split `Probe` objects under a single job, preventing Grafana dashboard duplication.
-
+- [x] **YACE (CloudWatch Metrics):** Deployed `prometheus-yet-another-cloudwatch-exporter` via Helm to scrape S3 bucket sizes and object counts from AWS CloudWatch. Configured a custom `s3-dashboard-cm.yaml` Grafana dashboard to visualize AWS storage costs and validate Velero backups.
+- [x] **Grafana Dashboard Cleanup:** Manually scrubbed orphaned and ghost dashboards (OVHcloud, InfluxDB, Spring Boot, Aerospike) from the persistent `grafana.db` SQLite database to fix UI clutter and remove unsupported metrics.
+- [x] **Comprehensive Grafana Dashboards:** Provisioned official Grafana dashboards for Longhorn storage, Velero backups, and the NGINX cluster Ingress Controller via `prometheus-values.yaml`, achieving full visualization coverage for all critical cluster infrastructure.
+- [x] **Infrastructure as Code (S3):** Updated Terraform (`main.tf`) to automatically provision dedicated AWS S3 buckets for Velero cluster backups and Elasticsearch snapshots.
 ## Local Access (Firewall Bypass)
 To securely access the internal services from a local PC while bypassing corporate firewalls and TLS interception, use HTTP port-forwarding over an SSH tunnel.
 
@@ -200,3 +211,20 @@ kubectl port-forward -n monitoring svc/prometheus-stack-grafana 3000:80 & kubect
 **3. Browser Access (Local PC):**
 - Grafana (Metrics & Loki Logs): `http://localhost:3000`
 - Fineract: `http://localhost:8080`
+
+# Loki Queries for Grafana
+
+Use these queries in Grafana -> Explore (select Loki as Data Source) to view logs.
+
+## Fineract Backend Logs
+`{service_name="fineract-backend"}`
+
+## Fineract Database Logs
+`{service_name="fineract-default"} |= ""` or `{service_name="fineract-tenants"} |= ""`
+
+## Nginx Proxy Logs
+`{service_name="fineract-nginx-proxy"}`
+
+## Fineract UI Logs
+`{service_name="fineract-ui"}`
+

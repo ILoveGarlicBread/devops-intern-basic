@@ -1,0 +1,28 @@
+configuration:
+      backupStorageLocation:
+        - name: default
+          provider: aws
+          bucket: rke2-cluster-backups-20260702020323339500000001
+          prefix: velero
+          config:
+            region: ap-south-1
+      volumeSnapshotLocation:
+        - name: default
+          provider: aws
+          config:
+            region: ap-south-1
+
+initContainers:
+  - name: velero-plugin-for-aws
+    image: velero/velero-plugin-for-aws:v1.10.0
+    imagePullPolicy: IfNotPresent
+    volumeMounts:
+      - mountPath: /target
+        name: plugins
+
+credentials:
+  useSecret: true
+  existingSecret: velero-aws-creds
+
+deployNodeAgent: true
+

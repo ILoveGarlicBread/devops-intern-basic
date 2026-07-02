@@ -17,13 +17,13 @@ config:
       check_interval: 1s
       limit_mib: 1500
     batch:
-      send_batch_size: 5000
+      send_batch_size: 1000
       timeout: 1s
 
   exporters:
     otlphttp:
       # Loki 3.0+ native OTLP endpoint
-      logs_endpoint: "http://loki-distributor.logging.svc.cluster.local:3100/otlp/v1/logs"
+      logs_endpoint: "http://loki-write.logging.svc.cluster.local:3100/otlp/v1/logs"
       tls:
         insecure: true
 

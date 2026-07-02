@@ -1,0 +1,49 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: manual-restore-test-1
+  namespace: fineract
+spec:
+  template:
+    spec:
+      containers:
+      - name: restore-worker
+        image: alpine:3.19
+        command:
+        - /bin/sh
+        - -c
+        - |
+          apk add --no-cache mysql-client aws-cli
+          
+          BUCKET="s3://rke2-cluster-backups-20260702020323339500000001/logical-backups"
+          
+          echo "Downloading backups..."
+          aws s3 cp $BUCKET/fineract-default-20260630-085022.sql.gz /tmp/fineract-default.sql.gz
+          aws s3 cp $BUCKET/fineract-tenants-20260630-085022.sql.gz /tmp/fineract-tenants.sql.gz
+          
+          echo "Restoring default database..."
+          gunzip -c /tmp/fineract-default.sql.gz | mysql -h fineract-default -u root -p"$MYSQL_ROOT_PASSWORD"
+          
+          echo "Restoring tenants database..."
+          gunzip -c /tmp/fineract-tenants.sql.gz | mysql -h fineract-tenants -u root -p"$MYSQL_ROOT_PASSWORD"
+          
+          echo "Restore complete!"
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: fineract-default
+              key: database-root-password
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: backup-s3-credentials
+              key: AWS_ACCESS_KEY_ID
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: backup-s3-credentials
+              key: AWS_SECRET_ACCESS_KEY
+        - name: AWS_DEFAULT_REGION
+          value: ap-south-1
+      restartPolicy: Never

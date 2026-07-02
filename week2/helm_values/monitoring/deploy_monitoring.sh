@@ -14,7 +14,7 @@ echo "Deploying kube-prometheus-stack..."
 helm upgrade --install prometheus-stack prometheus-community/kube-prometheus-stack \
   --namespace monitoring \
   --version 86.3.1 \
-  -f ../helm_values/prometheus-values.yaml
+  -f prometheus-values.yaml
 
 # 4. Deploy MySQL Exporter for Default DB
 echo "Deploying MySQL Exporter for Default DB..."
@@ -37,9 +37,10 @@ kubectl apply -f longhorn-servicemonitor.yaml
 
 # 7. Deploy Fineract Business Metrics Exporter and Dashboard
 echo "Applying Fineract Business Metrics manifests..."
-kubectl apply -f ../fineract-business-exporter.yaml
-kubectl apply -f ../fineract-business-rules.yaml
-kubectl apply -f ../fineract-business-dashboard.yaml
+kubectl apply -f fineract-business-exporter.yaml
+kubectl apply -f fineract-business-rules.yaml
+kubectl apply -f fineract-business-dashboard.yaml
+kubectl apply -f mysql-dashboard-cm.yaml
 
 # 8. Patch Alertmanager Generated Configuration to fix PrometheusOperatorSyncFailed
 # The kube-prometheus-stack base chart often passes a default empty string for slack_api_url,

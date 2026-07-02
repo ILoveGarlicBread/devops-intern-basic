@@ -28,7 +28,7 @@ jdbc:mysql://{{ include "mysql_host" . }}:3306/{{ .Values.global.db.tenantsDb }}
 {{- end -}}
 
 {{- define "mysql_password" -}}
-{{ coalesce .Values.mysql.auth.password .Values.mysql.auth.rootPassword }}
+{{ coalesce .Values.mysql.auth.password .Values.mysql.auth.rootPassword "fineract" }}
 {{- end -}}
 
 {{- define "secrets" -}}

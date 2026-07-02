@@ -35,6 +35,9 @@ fineractServer:
     fineract_tenants_driver: com.mysql.cj.jdbc.Driver
     FINERACT_DEFAULT_TENANTDB_PORT: "3306"
     LOG_OUTPUT_TYPE: console_plain
+    MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "prometheus,health,info"
+    MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
+    MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED: "true"
   # -- Same as `extraEnv` but passed as secrets
   extraSecretEnv: {}
   # -- Resource settings for Backend pods
