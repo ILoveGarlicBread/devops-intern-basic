@@ -1,0 +1,22 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: ActionSet
+metadata:
+  name: restore-1-fineract-default
+  namespace: kanister
+spec:
+  actions:
+  - name: restore
+    blueprint: mysql-logical-backup
+    object:
+      kind: StatefulSet
+      name: fineract-default
+      namespace: fineract
+    profile:
+      apiVersion: cr.kanister.io/v1alpha1
+      kind: Profile
+      name: kanister-s3-profile
+      namespace: kanister
+    artifacts:
+      mysqlBackup:
+        keyValue:
+          path: "logical-backups/fineract/fineract-default/2026-07-03 07:04:16.545643396 +0000 UTC/dump.sql.gz"

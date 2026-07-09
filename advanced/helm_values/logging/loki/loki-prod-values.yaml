@@ -1,0 +1,89 @@
+# loki-prod-values.yaml
+# True Microservices Architecture (Distributed mode)
+deploymentMode: SimpleScalable
+
+loki:
+  auth_enabled: false
+  schemaConfig:
+    configs:
+      - from: "2024-01-01"
+        store: tsdb
+        object_store: s3
+        schema: v13
+        index:
+          prefix: index_
+          period: 24h
+  storage:
+    type: s3
+    bucketNames:
+      chunks: rke2-loki-logs-20260702020323341000000002
+      ruler: rke2-loki-logs-20260702020323341000000002
+      admin: rke2-loki-logs-20260702020323341000000002
+    s3:
+      s3: s3://ap-south-1/rke2-loki-logs-20260702020323341000000002
+      endpoint: s3.ap-south-1.amazonaws.com
+      region: ap-south-1
+      access_key_id: ${AWS_ACCESS_KEY_ID}
+      secret_access_key: ${AWS_SECRET_ACCESS_KEY}
+
+  compactor:
+    working_directory: /var/loki/compactor
+    retention_enabled: true
+    delete_request_store: s3
+  limits_config:
+    retention_period: 30d
+    ingestion_rate_mb: 50
+    ingestion_burst_size_mb: 100
+
+# Disable SimpleScalable targets
+read:
+  replicas: 3
+  extraEnvFrom:
+    - secretRef:
+        name: loki-s3-secret
+write:
+  replicas: 3
+  extraEnvFrom:
+    - secretRef:
+        name: loki-s3-secret
+backend:
+  replicas: 1
+  extraEnvFrom:
+    - secretRef:
+        name: loki-s3-secret
+
+# Component Scaling (Distributed mode)
+ingester:
+  replicas: 0
+  maxUnavailable: 0
+distributor:
+  replicas: 0
+  maxUnavailable: 0
+querier:
+  replicas: 0
+  maxUnavailable: 0
+queryFrontend:
+  replicas: 0
+  maxUnavailable: 0
+queryScheduler:
+  replicas: 0
+  maxUnavailable: 0
+compactor:
+  replicas: 0
+indexGateway:
+  replicas: 0
+  maxUnavailable: 0
+
+# Memcached Chunks Cache fix
+chunksCache:
+  allocatedMemory: 1024
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1200Mi
+    limits:
+      memory: 1200Mi
+
+# Disable problematic NGINX Gateway for learning environment
+gateway:
+  enabled: false

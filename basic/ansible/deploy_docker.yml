@@ -1,0 +1,504 @@
+---
+- name: Deploy Complete Automated Infrastructure Stack
+  hosts: workers
+  become: true
+  vars:
+    public_ip_api_url: "https://checkip.amazonaws.com"
+    hosted_zone_id: "Z05312152ONGPJ6N7P6AL" 
+    domain_name: "lblam.tma-demos.shop"
+    # Using relative pathing makes this fully portable from your project root execution point
+    project_dir: "/home/ubuntu/TMA-DevOps-Internship/basic" 
+    certbot_email: "luongbaolam1303@gmail.com"
+
+  tasks:
+    # --- 1. DYNAMIC DNS UPDATE (ROUTE 53) ---
+    - name: Fetch current public IP of the Spot Instance
+      uri:
+        url: "{{ public_ip_api_url }}"
+        return_content: true
+      register: ip_response
+
+    - name: Clean public IP string
+      set_fact:
+        spot_public_ip: "{{ ip_response.content | trim }}"
+
+    - name: Update Route 53 Wildcard A Record
+      amazon.aws.route53:
+        zone: "{{ domain_name }}"
+        record: "*.{{ domain_name }}"
+        type: A
+        ttl: 60
+        state: present
+        value: "{{ spot_public_ip }}"
+        overwrite: true
+      delegate_to: localhost
+      become: false
+
+    # --- 2. INSTALL DOCKER ENGINE (Modernized for Ubuntu 22.04) ---
+    - name: Install required system packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - python3-pip
+          - python3-docker # Ensures Ansible can interact with Docker socket seamlessly
+        state: present
+        update_cache: true
+
+    - name: Create directory for Docker apt keyring
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Download Docker GPG Key safely
+      get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+
+    - name: Add Modern Docker Repository to sources list
+      apt_repository:
+        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu jammy stable"
+        state: present
+        filename: docker
+
+    - name: Install Docker Engine components
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+        update_cache: true
+
+    - name: Ensure Docker service is running and enabled
+      systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    # --- 3. DOCKER NETWORK CREATION ---
+    - name: Create custom Docker network
+      community.docker.docker_network:
+        name: containers-net
+        state: present
+
+    # --- 4. BUILD AND DEPLOY CUSTOM BACKEND CONTAINERS ---
+
+    # NGINX
+    - name: Create nginx app build workspace on remote server
+      file:
+        path: /home/ubuntu/nginx-app-build
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Copy nginx Dockerfile to remote server
+      copy:
+        src: "{{ project_dir }}/docker/nginx/Dockerfile"
+        dest: /home/ubuntu/nginx-app-build/Dockerfile
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Build Custom nginx Server Image
+      community.docker.docker_image:
+        build:
+          path: /home/ubuntu/nginx-app-build
+        name: nginx-app-image
+        tag: latest
+        source: build
+
+    - name: Launch nginx Application Container
+      community.docker.docker_container:
+        name: nginx-app
+        image: nginx-app-image:latest
+        networks:
+          - name: containers-net
+        state: started
+        restart_policy: always
+        recreate: true
+
+    # TOMCAT
+    - name: Create Tomcat app build workspace on remote server
+      file:
+        path: /home/ubuntu/java-app-build
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Copy tomcat Dockerfile to remote server
+      copy:
+        src: "{{ project_dir }}/docker/tomcat/Dockerfile"
+        dest: /home/ubuntu/java-app-build/Dockerfile
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Build Custom java Server Image
+      community.docker.docker_image:
+        build:
+          path: /home/ubuntu/java-app-build
+        name: java-app-image
+        tag: latest
+        source: build
+
+    - name: Launch Tomcat Application Container
+      community.docker.docker_container:
+        name: java-app
+        image: java-app-image:latest
+        networks:
+          - name: containers-net
+        state: started
+        restart_policy: always
+        recreate: true
+
+    # NODE
+    - name: Create node app build workspace on remote server
+      file:
+        path: /home/ubuntu/node-app-build
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Copy Node Dockerfile to remote server
+      copy:
+        src: "{{ project_dir }}/docker/node/Dockerfile"
+        dest: /home/ubuntu/node-app-build/Dockerfile
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Build Custom Node Server Image
+      community.docker.docker_image:
+        build:
+          path: /home/ubuntu/node-app-build
+        name: node-app-image
+        tag: latest
+        source: build
+
+    - name: Launch Node Application Container
+      community.docker.docker_container:
+        name: node-app
+        image: node-app-image:latest
+        networks:
+          - name: containers-net
+        state: started
+        restart_policy: always
+        recreate: true
+
+    # APACHE
+    - name: Create apache app build workspace on remote server
+      file:
+        path: /home/ubuntu/apache-app-build
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Copy apache Dockerfile to remote server
+      copy:
+        src: "{{ project_dir }}/docker/apache/Dockerfile"
+        dest: /home/ubuntu/apache-app-build/Dockerfile
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Build Custom Apache Server Image
+      community.docker.docker_image:
+        build:
+          path: /home/ubuntu/apache-app-build
+        name: apache-app-image
+        tag: latest
+        source: build
+
+    - name: Launch Apache Application Container
+      community.docker.docker_container:
+        name: apache-app
+        image: apache-app-image:latest
+        networks:
+          - name: containers-net
+        state: started
+        restart_policy: always
+        recreate: true
+
+    # RUBY
+    - name: Create Ruby app build workspace on remote server
+      file:
+        path: /home/ubuntu/ruby-app-build
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Copy Ruby Dockerfile to remote server
+      copy:
+        src: "{{ project_dir }}/docker/ruby/Dockerfile"
+        dest: /home/ubuntu/ruby-app-build/Dockerfile
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Copy Ruby app.rb to remote server
+      copy:
+        src: "{{ project_dir }}/docker/ruby/app.rb"
+        dest: /home/ubuntu/ruby-app-build/app.rb
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Build Custom Ruby Server Image
+      community.docker.docker_image:
+        build:
+          path: /home/ubuntu/ruby-app-build
+        name: ruby-app-image
+        tag: latest
+        source: build
+
+    - name: Launch ruby Application Container
+      community.docker.docker_container:
+        name: ruby-app
+        image: ruby-app-image:latest
+        networks:
+          - name: containers-net
+        state: started
+        restart_policy: always
+        recreate: true
+
+    # GO
+    - name: Create GO app build workspace on remote server
+      file:
+        path: /home/ubuntu/go-app-build
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Copy Go Dockerfile to remote server
+      copy:
+        src: "{{ project_dir }}/docker/go/Dockerfile"
+        dest: /home/ubuntu/go-app-build/Dockerfile
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Copy Go main.go to remote server
+      copy:
+        src: "{{ project_dir }}/docker/go/main.go"
+        dest: /home/ubuntu/go-app-build/main.go
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Build Custom Go Server Image
+      community.docker.docker_image:
+        build:
+          path: /home/ubuntu/go-app-build
+        name: go-app-image
+        tag: latest
+        source: build
+
+    - name: Launch Go Application Container
+      community.docker.docker_container:
+        name: go-app
+        image: go-app-image:latest
+        networks:
+          - name: containers-net
+        state: started
+        restart_policy: always
+        recreate: true
+
+    # PYTHON
+    - name: Create Python app build workspace on remote server
+      file:
+        path: /home/ubuntu/python-app-build
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Copy Python Dockerfile to remote server
+      copy:
+        src: "{{ project_dir }}/docker/python/Dockerfile"
+        dest: /home/ubuntu/python-app-build/Dockerfile
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Build Custom Python Server Image
+      community.docker.docker_image:
+        build:
+          path: /home/ubuntu/python-app-build
+        name: python-app-image
+        tag: latest
+        source: build
+
+    - name: Launch Python Application Container
+      community.docker.docker_container:
+        name: python-app
+        image: python-app-image:latest
+        networks:
+          - name: containers-net
+        state: started
+        restart_policy: always
+        recreate: true
+
+    # --- 5. INSTALL CERTBOT & ROUTE 53 PLUGIN ---
+    - name: Install Certbot and python3-certbot-dns-route53
+      apt:
+        name:
+          - certbot
+          - python3-certbot-dns-route53
+        state: present
+        update_cache: true
+
+    - name: Request Wildcard SSL Certificate via Route 53 DNS Challenge
+      command: >
+        certbot certonly
+        --dns-route53
+        -d "*.{{ domain_name }}"
+        -d "{{ domain_name }}"
+        --agree-tos
+        --email {{ certbot_email }}
+        --non-interactive
+      args:
+        creates: "/etc/letsencrypt/live/{{ domain_name }}/fullchain.pem"
+
+    # --- 6. BUILD AND RUN NGINX REVERSE PROXY ---
+    - name: Create build workspace directory on remote server
+      file:
+        path: /home/ubuntu/proxy-build
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Copy Nginx default.conf to remote server
+      copy:
+        src: "{{ project_dir }}/proxy/proxy.conf"
+        dest: /home/ubuntu/proxy-build/proxy.conf
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Copy Dockerfile to remote server
+      copy:
+        src: "{{ project_dir }}/proxy/Dockerfile"
+        dest: /home/ubuntu/proxy-build/Dockerfile
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Build Nginx Proxy Docker Image
+      community.docker.docker_image:
+        build:
+          path: /home/ubuntu/proxy-build
+        name: nginx-proxy-image
+        tag: v1
+        source: build
+
+    - name: Launch Nginx Proxy Frontline Container
+      community.docker.docker_container:
+        name: nginx-proxy
+        image: nginx-proxy-image:v1
+        networks:
+          - name: containers-net
+        ports:
+          - "80:80"
+          - "443:443"
+          - "8080:8080"
+        volumes:
+          - /etc/letsencrypt:/etc/letsencrypt:ro
+        state: started
+        restart_policy: always
+        recreate: true
+    # install aws
+    - name: Ensure prerequisite packages are installed (Ubuntu)
+      apt:
+        name: 
+          - unzip
+          - curl
+        state: present
+        update_cache: yes
+
+    - name: Check if AWS CLI is already installed
+      command: aws --version
+      register: aws_cli_check
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Download and install AWS CLI v2 if missing
+      shell: |
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip -o awscliv2.zip
+        sudo ./aws/install --update
+        rm -rf awscliv2.zip ./aws
+      when: aws_cli_check.rc != 0
+    # Auto update ip on route53
+    - name: Create local script directory
+      file:
+        path: /usr/local/bin
+        state: directory
+        mode: '0755'
+
+    - name: Deploy dynamic DNS update script
+      copy:
+        dest: /usr/local/bin/update-route53.sh
+        mode: '0755'
+        content: |
+          #!/bin/bash
+          # Fetch the brand-new public IP assigned on this boot cycle
+          PUBLIC_IP=$(curl -s https://checkip.amazonaws.com)
+          ZONE_ID="Z05312152ONGPJ6N7P6AL"
+          DOMAIN="*.lblam.tma-demos.shop"
+
+          # Build the payload file
+          cat << EOF > /tmp/route53-update.json
+          {
+            "Comment": "Automated IP update on systemd boot initialization",
+            "Changes": [
+              {
+                "Action": "UPSERT",
+                "ResourceRecordSet": {
+                  "Name": "$DOMAIN",
+                  "Type": "A",
+                  "TTL": 60,
+                  "ResourceRecords": [{ "Value": "$PUBLIC_IP" }]
+                }
+              }
+            ]
+          }
+          EOF
+
+          # Send the update to Route 53 using the instance's IAM Profile
+          aws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID --change-batch file:///tmp/route53-update.json
+
+    - name: Deploy Systemd Service for boot tracking
+      copy:
+        dest: /etc/systemd/system/update-dns.service
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=Update Route 53 Wildcard DNS on Boot
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          Type=oneshot
+          ExecStart=/usr/local/bin/update-route53.sh
+          RemainAfterExit=yes
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Enable the DNS update service so it runs on next boot
+      systemd:
+        name: update-dns
+        enabled: true
+        daemon_reload: true

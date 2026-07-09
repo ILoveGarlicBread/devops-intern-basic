@@ -1,0 +1,9 @@
+---
+- import_playbook: deploy_k8s.yml
+- import_playbook: bootstrap_cluster_apps.yml
+- import_playbook: deploy_longhorn.yml
+- import_playbook: deploy_autoupdate_route53.yml
+- import_playbook: deploy_monitoring.yml
+- import_playbook: deploy_logging.yml
+- import_playbook: deploy_backups.yml
+- import_playbook: deploy_fineract.yml

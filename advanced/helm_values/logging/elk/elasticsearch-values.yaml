@@ -1,0 +1,56 @@
+global:
+  security:
+    allowInsecureImages: true
+
+image:
+  registry: docker.io
+  repository: bitnamilegacy/elasticsearch
+  tag: 9.1.2-debian-12-r0
+
+sysctlImage:
+  repository: bitnamilegacy/os-shell
+  tag: 12-debian-12-r51
+
+
+
+extraEnvVars:
+  - name: AWS_ACCESS_KEY_ID
+    valueFrom:
+      secretKeyRef:
+        name: loki-s3-secret
+        key: AWS_ACCESS_KEY_ID
+  - name: AWS_SECRET_ACCESS_KEY
+    valueFrom:
+      secretKeyRef:
+        name: loki-s3-secret
+        key: AWS_SECRET_ACCESS_KEY
+
+master:
+  masterOnly: false
+  replicaCount: 1
+  heapSize: 1024m
+  nodeSelector:
+    workload: apps
+  persistence:
+    enabled: true
+    storageClass: longhorn-fixed
+    size: 15Gi
+  resourcesPreset: "none"
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2048Mi
+    limits:
+      memory: 4096Mi
+
+data:
+  replicaCount: 0
+
+coordinating:
+  replicaCount: 0
+
+ingest:
+  replicaCount: 0
+
+security:
+  enabled: false

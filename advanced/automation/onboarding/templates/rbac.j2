@@ -1,0 +1,24 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: fineract
+  name: fineract-developer
+rules:
+- apiGroups: ["", "apps", "extensions"]
+  resources: ["pods", "services", "endpoints", "deployments", "replicasets", "statefulsets", "configmaps", "persistentvolumeclaims"]
+  verbs: ["get", "list", "watch", "describe", "logs", "port-forward"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: "{{ username }}-fineract-developer-binding"
+  namespace: fineract
+subjects:
+- kind: User
+  name: "{{ username }}"
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: fineract-developer
+  apiGroup: rbac.authorization.k8s.io

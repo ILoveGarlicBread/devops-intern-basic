@@ -1,0 +1,58 @@
+---
+- name: Deploy Backup and Restore Stack (Velero & Kanister)
+  hosts: master
+  become: yes
+  tasks:
+    - name: Add Kanister Helm Repository
+      kubernetes.core.helm_repository:
+        name: kanister
+        repo_url: "https://charts.kanister.io"
+
+    - name: Add Velero Helm Repository
+      kubernetes.core.helm_repository:
+        name: vmware-tanzu
+        repo_url: "https://vmware-tanzu.github.io/helm-charts"
+
+    - name: Create kanister namespace
+      kubernetes.core.k8s:
+        kubeconfig: /etc/rancher/rke2/rke2.yaml
+        name: kanister
+        api_version: v1
+        kind: Namespace
+        state: present
+
+    - name: Create velero namespace
+      kubernetes.core.k8s:
+        kubeconfig: /etc/rancher/rke2/rke2.yaml
+        name: velero
+        api_version: v1
+        kind: Namespace
+        state: present
+
+    - name: Deploy Kanister Operator
+      kubernetes.core.helm:
+        kubeconfig: /etc/rancher/rke2/rke2.yaml
+        name: kanister-operator
+        chart_ref: kanister/kanister-operator
+        release_namespace: kanister
+        version: 0.113.0
+
+    - name: Deploy Velero
+      kubernetes.core.helm:
+        kubeconfig: /etc/rancher/rke2/rke2.yaml
+        name: velero
+        chart_ref: vmware-tanzu/velero
+        release_namespace: velero
+        values_files:
+          - /home/ubuntu/TMA-DevOps-Lam-Internship/advanced/helm_values/backup-restore/velero-values.yaml
+
+    - name: Apply Kanister RBAC, Profiles and Blueprints
+      kubernetes.core.k8s:
+        kubeconfig: /etc/rancher/rke2/rke2.yaml
+        state: present
+        src: "/home/ubuntu/TMA-DevOps-Lam-Internship/advanced/helm_values/backup-restore/{{ item }}"
+      loop:
+        - kanister-rbac.yaml
+        - kanister-profile.yaml
+        - mysql-blueprint.yaml
+        - kanister-backup-cronjob.yaml

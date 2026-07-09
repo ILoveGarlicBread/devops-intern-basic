@@ -1,0 +1,46 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+    - name: Ensure kubelet-arg block is present in RKE2 config
+      blockinfile:
+        path: /etc/rancher/rke2/config.yaml
+        marker: "# {mark} ANSIBLE MANAGED BLOCK KUBELET ARGS"
+        block: |
+          kubelet-arg:
+            - "anonymous-auth=false"
+            - "authorization-mode=Webhook"
+            - "tls-cipher-suites=TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+        create: yes
+
+    - name: Fix permissions on agent kubeconfig
+      file:
+        path: /var/lib/rancher/rke2/agent/kubelet.kubeconfig
+        owner: root
+        group: root
+        mode: '0600'
+      ignore_errors: yes
+
+    - name: Fix permissions on proxy kubeconfig
+      file:
+        path: /var/lib/rancher/rke2/agent/kubeproxy.kubeconfig
+        owner: root
+        group: root
+        mode: '0600'
+      ignore_errors: yes
+
+- hosts: master
+  become: yes
+  tasks:
+    - name: Restart rke2-server to apply kubelet args
+      systemd:
+        name: rke2-server
+        state: restarted
+
+- hosts: worker
+  become: yes
+  tasks:
+    - name: Restart rke2-agent to apply kubelet args
+      systemd:
+        name: rke2-agent
+        state: restarted

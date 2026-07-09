@@ -1,0 +1,37 @@
+---
+- name: Zero-Trust Developer Onboarding
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    # Default username if not passed via -e "username=something"
+    username: "new_dev"
+
+  tasks:
+    - name: Ensure output directory exists
+      file:
+        path: "output"
+        state: directory
+
+    - name: Apply RBAC Rules for the User
+      kubernetes.core.k8s:
+        state: present
+        template: templates/rbac.j2
+
+    - name: Generate TLS Certificates (Bash)
+      command: "bash scripts/generate_certs.sh {{ username }}"
+      args:
+        chdir: "{{ playbook_dir }}"
+      register: cert_output
+
+    - debug:
+        var: cert_output.stdout_lines
+
+    - name: Build Kubeconfig (Python)
+      command: "python3 scripts/build_kubeconfig.py {{ username }}"
+      args:
+        chdir: "{{ playbook_dir }}"
+      register: py_output
+
+    - debug:
+        var: py_output.stdout_lines

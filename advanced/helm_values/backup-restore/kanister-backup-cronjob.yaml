@@ -1,0 +1,59 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: kanister-fineract-backup
+  namespace: kanister
+spec:
+  schedule: "25 9 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          # serviceAccountName: kanister-kanister-operator # Ensure this SA has permission to create actionsets
+          containers:
+          - name: kubectl
+            image: bitnami/kubectl:latest
+            command: 
+            - /bin/sh
+            - -c
+            - |
+              cat <<EOF | kubectl create -f -
+              apiVersion: cr.kanister.io/v1alpha1
+              kind: ActionSet
+              metadata:
+                generateName: daily-backup-fineract-default-
+                namespace: kanister
+              spec:
+                actions:
+                - name: backup
+                  blueprint: mysql-logical-backup
+                  object:
+                    kind: StatefulSet
+                    name: fineract-default
+                    namespace: fineract
+                  profile:
+                    apiVersion: cr.kanister.io/v1alpha1
+                    kind: Profile
+                    name: kanister-s3-profile
+                    namespace: kanister
+              ---
+              apiVersion: cr.kanister.io/v1alpha1
+              kind: ActionSet
+              metadata:
+                generateName: daily-backup-fineract-tenants-
+                namespace: kanister
+              spec:
+                actions:
+                - name: backup
+                  blueprint: mysql-logical-backup
+                  object:
+                    kind: StatefulSet
+                    name: fineract-tenants
+                    namespace: fineract
+                  profile:
+                    apiVersion: cr.kanister.io/v1alpha1
+                    kind: Profile
+                    name: kanister-s3-profile
+                    namespace: kanister
+              EOF
+          restartPolicy: OnFailure

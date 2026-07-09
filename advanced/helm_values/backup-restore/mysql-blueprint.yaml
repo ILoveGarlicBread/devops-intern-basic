@@ -1,0 +1,59 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: Blueprint
+metadata:
+  name: mysql-logical-backup
+  namespace: kanister
+actions:
+  backup:
+    phases:
+    - func: KubeTask
+      name: dumpToObjectStore
+      objects:
+        mysqlSecret:
+          kind: Secret
+          name: "{{ .StatefulSet.Name }}"
+          namespace: "{{ .StatefulSet.Namespace }}"
+      args:
+        image: ghcr.io/kanisterio/kanister-tools:0.118.0
+        namespace: "{{ .StatefulSet.Namespace }}"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          microdnf install -y mysql
+          export MYSQL_PWD="{{ index .Phases.dumpToObjectStore.Secrets.mysqlSecret.Data "database-root-password" | toString }}"
+          
+          echo "Streaming compressed MySQL logical dump to S3..."
+          mysqldump --column-statistics=0 -h {{ .StatefulSet.Name }}.{{ .StatefulSet.Namespace }}.svc.cluster.local -u root --all-databases --single-transaction --quick | gzip | kando location push - --profile '{{ toJson .Profile }}' --path "logical-backups/{{ .StatefulSet.Namespace }}/{{ .StatefulSet.Name }}/{{ toDate "2006-01-02T15:04:05Z" .Time }}/dump.sql.gz"
+          echo "Backup complete!"
+
+  restore:
+    phases:
+    - func: KubeTask
+      name: restoreFromObjectStore
+      objects:
+        mysqlSecret:
+          kind: Secret
+          name: "{{ .StatefulSet.Name }}"
+          namespace: "{{ .StatefulSet.Namespace }}"
+      args:
+        image: ghcr.io/kanisterio/kanister-tools:0.118.0
+        namespace: "{{ .StatefulSet.Namespace }}"
+        command:
+        - bash
+        - -o
+        - errexit
+        - -o
+        - pipefail
+        - -c
+        - |
+          microdnf install -y mysql
+          export MYSQL_PWD="{{ index .Phases.restoreFromObjectStore.Secrets.mysqlSecret.Data "database-root-password" | toString }}"
+          
+          echo "Streaming from S3 to MySQL..."
+          kando location pull - --profile '{{ toJson .Profile }}' --path "{{ .ArtifactsIn.mysqlBackup.KeyValue.path }}" | gunzip | mysql -f -h {{ .StatefulSet.Name }}.{{ .StatefulSet.Namespace }}.svc.cluster.local -u root
+          echo "Restore complete!"

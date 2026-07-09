@@ -1,0 +1,37 @@
+apiVersion: cr.kanister.io/v1alpha1
+kind: ActionSet
+metadata:
+  name: snapshot-1-fineract-default
+  namespace: kanister
+spec:
+  actions:
+  - name: backup
+    blueprint: mysql-logical-backup
+    object:
+      kind: StatefulSet
+      name: fineract-default
+      namespace: fineract
+    profile:
+      apiVersion: cr.kanister.io/v1alpha1
+      kind: Profile
+      name: kanister-s3-profile
+      namespace: kanister
+---
+apiVersion: cr.kanister.io/v1alpha1
+kind: ActionSet
+metadata:
+  name: snapshot-1-fineract-tenants
+  namespace: kanister
+spec:
+  actions:
+  - name: backup
+    blueprint: mysql-logical-backup
+    object:
+      kind: StatefulSet
+      name: fineract-tenants
+      namespace: fineract
+    profile:
+      apiVersion: cr.kanister.io/v1alpha1
+      kind: Profile
+      name: kanister-s3-profile
+      namespace: kanister

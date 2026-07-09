@@ -1,0 +1,55 @@
+---
+- name: Deploy Logging Stack
+  hosts: master
+  become: yes
+  tasks:
+    - name: Add Grafana Helm Repository
+      kubernetes.core.helm_repository:
+        name: grafana
+        repo_url: "https://grafana.github.io/helm-charts"
+
+    - name: Add OpenTelemetry Helm Repository
+      kubernetes.core.helm_repository:
+        name: open-telemetry
+        repo_url: "https://open-telemetry.github.io/opentelemetry-helm-charts"
+
+    - name: Create logging namespace
+      kubernetes.core.k8s:
+        kubeconfig: /etc/rancher/rke2/rke2.yaml
+        name: logging
+        api_version: v1
+        kind: Namespace
+        state: present
+
+    - name: Deploy Loki
+      kubernetes.core.helm:
+        kubeconfig: /etc/rancher/rke2/rke2.yaml
+        name: loki
+        chart_ref: grafana/loki
+        release_namespace: logging
+        values_files:
+          - /home/ubuntu/TMA-DevOps-Lam-Internship/advanced/helm_values/logging/loki/loki-prod-values.yaml
+
+    - name: Deploy OpenTelemetry Gateway
+      kubernetes.core.helm:
+        kubeconfig: /etc/rancher/rke2/rke2.yaml
+        name: otel-gateway
+        chart_ref: open-telemetry/opentelemetry-collector
+        release_namespace: logging
+        values_files:
+          - /home/ubuntu/TMA-DevOps-Lam-Internship/advanced/helm_values/logging/loki/otel-gateway-values.yaml
+
+    - name: Deploy OpenTelemetry Agent
+      kubernetes.core.helm:
+        kubeconfig: /etc/rancher/rke2/rke2.yaml
+        name: otel-agent
+        chart_ref: open-telemetry/opentelemetry-collector
+        release_namespace: logging
+        values_files:
+          - /home/ubuntu/TMA-DevOps-Lam-Internship/advanced/helm_values/logging/loki/otel-agent-values.yaml
+
+    - name: Apply Loki Dashboard ConfigMap
+      kubernetes.core.k8s:
+        kubeconfig: /etc/rancher/rke2/rke2.yaml
+        state: present
+        src: "/home/ubuntu/TMA-DevOps-Lam-Internship/advanced/helm_values/logging/loki/loki-dashboard-cm.yaml"
