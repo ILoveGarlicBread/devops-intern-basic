@@ -22,3 +22,27 @@ roleRef:
   kind: ClusterRole
   name: kanister-secret-reader
   apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kanister-backup-role
+  namespace: kanister
+rules:
+- apiGroups: ["cr.kanister.io"]
+  resources: ["actionsets"]
+  verbs: ["create", "get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kanister-backup-rolebinding
+  namespace: kanister
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: kanister
+roleRef:
+  kind: Role
+  name: kanister-backup-role
+  apiGroup: rbac.authorization.k8s.io
