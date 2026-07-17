@@ -50,6 +50,15 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: fineractserver-sa            
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: mariadb-tmp
+          emptyDir: {}
+        - name: mariadb-logs
+          emptyDir: {}
+        - name: mariadb-conf
+          emptyDir: {}
       containers:
         - resources:
             limits:
@@ -60,7 +69,7 @@ spec:
                 - /bin/sh
                 - '-i'
                 - '-c'
-                - MYSQL_PWD="$MYSQL_PASSWORD" mariadb-admin ping -u $MYSQL_USER
+                - MARIADB_PWD="$MARIADB_PASSWORD" mariadb-admin ping -u $MARIADB_USER
             initialDelaySeconds: 5
             timeoutSeconds: 1
             periodSeconds: 10
@@ -68,47 +77,66 @@ spec:
             failureThreshold: 3
           terminationMessagePath: /dev/termination-log
           name: fineract-tenants
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           livenessProbe:
             exec:
               command:
                 - /bin/sh
                 - '-i'
                 - '-c'
-                - MYSQL_PWD="$MYSQL_PASSWORD" mariadb-admin ping -u $MYSQL_USER
+                - MARIADB_PWD="$MARIADB_PASSWORD" mariadb-admin ping -u $MARIADB_USER
             initialDelaySeconds: 30
             timeoutSeconds: 1
             periodSeconds: 10
             successThreshold: 1
             failureThreshold: 3
           env:
-            - name: MYSQL_USER
+            - name: MARIADB_USER
               value: "fineract"
-            - name: MYSQL_PASSWORD
+            - name: MARIADB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: fineract-db-passwords
-                  key: password
-            - name: MYSQL_ROOT_PASSWORD
+                  name: fineract-tenants
+                  key: database-password
+            - name: MARIADB_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: fineract-db-passwords
                   key: rootPassword
-            - name: MYSQL_DATABASE
+            - name: MARIADB_DATABASE
               value: "fineract_tenants"
           ports:
             - containerPort: 3306
               protocol: TCP
           imagePullPolicy: IfNotPresent
           volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: mariadb-tmp
+              mountPath: /opt/bitnami/mariadb/tmp
+            - name: mariadb-logs
+              mountPath: /opt/bitnami/mariadb/logs
+            - name: mariadb-conf
+              mountPath: /opt/bitnami/mariadb/conf
             - name: fineract-tenants-data
-              mountPath: /var/lib/mysql
+              mountPath: /bitnami/mariadb/data
           terminationMessagePolicy: File
-          image: >-
-            mariadb:11.4
+          image: bitnami/mariadb:latest
       restartPolicy: Always
       terminationGracePeriodSeconds: 30
       dnsPolicy: ClusterFirst
-      securityContext: {}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       schedulerName: default-scheduler
 ---
 apiVersion: v1

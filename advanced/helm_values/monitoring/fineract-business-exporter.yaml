@@ -58,7 +58,7 @@ spec:
                   name: fineract-db-passwords
                   key: password
             - name: DATA_SOURCE_NAME
-              value: "mysql://root:$(DB_PASSWORD)@fineract-default.fineract.svc.cluster.local:3306/fineract_default"
+              value: "mysql://fineract:$(DB_PASSWORD)@fineract-default.fineract.svc.cluster.local:3306/fineract_default"
           ports:
             - containerPort: 9399
               name: metrics

@@ -23,7 +23,7 @@ data:
           "title": "Total Clients",
           "gridPos": { "h": 8, "w": 6, "x": 0, "y": 0 },
           "targets": [
-            { "expr": "fineract_clients_total", "legendFormat": "Clients" }
+            { "expr": "max(fineract_clients_total)", "legendFormat": "Clients" }
           ]
         },
         {
@@ -31,7 +31,7 @@ data:
           "title": "Total Accounts",
           "gridPos": { "h": 8, "w": 6, "x": 6, "y": 0 },
           "targets": [
-            { "expr": "fineract_accounts_total", "legendFormat": "Accounts" }
+            { "expr": "max(fineract_accounts_total)", "legendFormat": "Accounts" }
           ]
         },
         {
@@ -39,7 +39,7 @@ data:
           "title": "Total Loans",
           "gridPos": { "h": 8, "w": 6, "x": 12, "y": 0 },
           "targets": [
-            { "expr": "fineract_loans_total", "legendFormat": "Loans" }
+            { "expr": "max(fineract_loans_total)", "legendFormat": "Loans" }
           ]
         },
         {
@@ -47,7 +47,7 @@ data:
           "title": "Total Cards",
           "gridPos": { "h": 8, "w": 6, "x": 18, "y": 0 },
           "targets": [
-            { "expr": "fineract_cards_total", "legendFormat": "Cards" }
+            { "expr": "max(fineract_cards_total)", "legendFormat": "Cards" }
           ]
         },
         {

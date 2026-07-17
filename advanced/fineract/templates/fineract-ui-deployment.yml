@@ -53,12 +53,34 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: fineractserver-sa    
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      volumes:
+        - name: nginx-cache
+          emptyDir: {}
+        - name: nginx-pid
+          emptyDir: {}
       containers:
         - name: fineract-ui
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           image: "{{ .Values.fineractUI.image.name }}:{{ .Values.fineractUI.image.tag }}"
           ports:
             - containerPort: 80
               name: http
+          volumeMounts:
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+            - name: nginx-pid
+              mountPath: /var/run
           readinessProbe:
             httpGet:
           readinessProbe:

@@ -18,18 +18,18 @@ spec:
         summary: "No clients found in Fineract database"
         description: "Fineract database is reporting 0 clients for 5 minutes. Possible data loss or exporter connection issue."
     - alert: FineractHighLoanVolume
-      expr: fineract_loans_total > 50
+      expr: delta(fineract_loans_total[30m]) > 10
       for: 5m
       labels:
         severity: warning
       annotations:
-        summary: "High number of loans in Fineract"
-        description: "There are currently {{ $value }} loans in Fineract, exceeding the threshold."
+        summary: "High rate of new loans in Fineract"
+        description: "There were {{ $value }} new loans created in Fineract over the last 30 minutes."
     - alert: FineractHighAccountVolume
-      expr: fineract_accounts_total > 100
+      expr: delta(fineract_accounts_total[30m]) > 20
       for: 5m
       labels:
         severity: warning
       annotations:
-        summary: "High number of savings accounts in Fineract"
-        description: "There are currently {{ $value }} savings accounts in Fineract."
+        summary: "High rate of new savings accounts in Fineract"
+        description: "There were {{ $value }} new savings accounts created in Fineract over the last 30 minutes."

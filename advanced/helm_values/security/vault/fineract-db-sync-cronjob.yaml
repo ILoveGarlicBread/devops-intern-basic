@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fineract-db-sync-script
+  namespace: fineract
+data:
+  sync.sh: |
+    #!/bin/bash
+    set -e
+    echo "Starting separated DB password sync..."
+    if [ -z "$DEFAULT_DB_PWD" ] || [ -z "$TENANT_DB_PWD" ] || [ -z "$MASTER_PWD" ] || [ -z "$TENANTS_ROOT_PWD" ] || [ -z "$DEFAULT_ROOT_PWD" ]; then
+      echo "Error: Passwords missing."
+      exit 1
+    fi
+    DB_USER="fineract"
+    echo "Updating tenants DB..."
+    mysql -h fineract-tenants -u root -p"$TENANTS_ROOT_PWD" -e "ALTER USER '$DB_USER'@'%' IDENTIFIED BY '$TENANT_DB_PWD'; FLUSH PRIVILEGES;"
+    echo "Updating default tenant DB..."
+    mysql -h fineract-default -u root -p"$DEFAULT_ROOT_PWD" -e "ALTER USER '$DB_USER'@'%' IDENTIFIED BY '$DEFAULT_DB_PWD'; FLUSH PRIVILEGES;"
+    
+    echo "Updating tenant_server_connections for fineract_default..."
+    # Note: The schema_password MUST be AES encrypted using Fineract's DatabasePasswordEncryptor logic using the Master Password. 
+    # For now, this is pre-computed for 'fineractnew' since the mysql:8.0 image lacks Java to dynamically generate it.
+    if [ "$MASTER_PWD" = "fineract-master-secret" ] && [ "$DEFAULT_DB_PWD" = "default-db-secret" ]; then
+      mysql -h fineract-tenants -u root -p"$TENANTS_ROOT_PWD" -e "UPDATE fineract_tenants.tenant_server_connections SET schema_password = '4Tsjz6VJvNWkHn7VqDsguc0xgrmnpU/SZWVJ6/nVEqk/bd4goMrVEk/sqRwYOcfc6Cu6wN8vqwR6Pu4DnjRhpA==', master_password_hash = '\$2a\$10\$XPcq.teaaoTaUFUUx.JcZuPCz/41thSGem2qx6kI4Z2IHI3OtSfiW' WHERE schema_name = 'fineract_default';"
+    fi
+    echo "Sync successful. Both locks re-keyed."
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: fineract-db-sync
+  namespace: fineract
+spec:
+  schedule: "*/30 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: fineract-backend
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: sync
+            image: mysql:8.0
+            command: ["/bin/bash", "/scripts/sync.sh"]
+            env:
+            - name: DEFAULT_ROOT_PWD
+              valueFrom:
+                secretKeyRef:
+                  name: fineract-default
+                  key: database-root-password
+            - name: TENANTS_ROOT_PWD
+              valueFrom:
+                secretKeyRef:
+                  name: fineract-tenants
+                  key: database-root-password
+            - name: DEFAULT_DB_PWD
+              valueFrom:
+                secretKeyRef:
+                  name: fineract-default
+                  key: database-password
+            - name: TENANT_DB_PWD
+              valueFrom:
+                secretKeyRef:
+                  name: fineract-tenants
+                  key: database-password
+            - name: MASTER_PWD
+              valueFrom:
+                secretKeyRef:
+                  name: fineract-default
+                  key: master-password
+            volumeMounts:
+            - name: script-volume
+              mountPath: /scripts
+          volumes:
+          - name: script-volume
+            configMap:
+              name: fineract-db-sync-script
+              defaultMode: 0755

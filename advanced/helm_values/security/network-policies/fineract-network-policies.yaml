@@ -1,0 +1,184 @@
+---
+# 1. DEFAULT DENY
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: fineract
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+
+---
+# 2. ALLOW DNS (CoreDNS)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-all-dns
+  namespace: fineract
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+
+---
+# 3. NGINX PROXY POLICY
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: nginx-proxy-policy
+  namespace: fineract
+spec:
+  podSelector:
+    matchLabels:
+      app: fineract-proxy
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - {} # Allow all incoming traffic from the Ingress Controller (external)
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: fineract-backend
+    - podSelector:
+        matchLabels:
+          app: fineract # This is the UI pod
+          tier: ui
+
+---
+# 4. FINERACT UI POLICY
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: fineract-ui-policy
+  namespace: fineract
+spec:
+  podSelector:
+    matchLabels:
+      tier: ui
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: fineract-proxy
+
+---
+# 5. FINERACT BACKEND POLICY
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: fineract-backend-policy
+  namespace: fineract
+spec:
+  podSelector:
+    matchLabels:
+      app: fineract-backend
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: fineract-proxy
+  egress:
+  - to:
+    - podSelector:
+        matchExpressions:
+        - key: app
+          operator: In
+          values:
+          - fineract-default
+          - fineract-tenants
+
+---
+# 6. MYSQL DATABASES POLICY
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mysql-databases-policy
+  namespace: fineract
+spec:
+  podSelector:
+    matchExpressions:
+    - key: app
+      operator: In
+      values:
+      - fineract-default
+      - fineract-tenants
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: fineract-backend
+    - podSelector:
+        matchLabels:
+          app: fineract-business-exporter
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: monitoring
+
+---
+# 7. BUSINESS EXPORTER POLICY
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: business-exporter-policy
+  namespace: fineract
+spec:
+  podSelector:
+    matchLabels:
+      app: fineract-business-exporter
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - podSelector:
+        matchExpressions:
+        - key: app
+          operator: In
+          values:
+          - fineract-default
+          - fineract-tenants
+
+---
+# 8. PROMETHEUS MONITORING POLICY
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-monitoring-scraping
+  namespace: fineract
+spec:
+  # Allow Prometheus to scrape ANY pod in fineract namespace
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: monitoring
+    # Allow standard exporter ports (9104 for MySQL exporter, 9399 for business exporter)
+    ports:
+    - protocol: TCP
+      port: 9104
+    - protocol: TCP
+      port: 9399

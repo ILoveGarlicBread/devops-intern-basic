@@ -1,6 +1,8 @@
 mysql:
-  user: "root"
-  existingSecret: fineract-db-passwords
+  user: "fineract"
+  existingPasswordSecret:
+    name: fineract-db-passwords-monitoring
+    key: tenantDbPassword
   host: "fineract-tenants.fineract.svc.cluster.local"
   port: 3306
 serviceMonitor:

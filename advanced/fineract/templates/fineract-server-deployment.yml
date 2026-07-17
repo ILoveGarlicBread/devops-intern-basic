@@ -55,8 +55,20 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: fineract-backend
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           image: "{{ .Values.fineractServer.image.name }}:{{ .Values.fineractServer.image.tag }}"
           envFrom:
             - secretRef:
@@ -70,7 +82,7 @@ spec:
             - name: FINERACT_HIKARI_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: fineract-default
+                  name: fineract-tenants
                   key: database-password
             - name: FINERACT_DEFAULT_TENANTDB_UID
               value: {{ include "mysql_user" . }}
@@ -78,6 +90,16 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: fineract-default
+                  key: database-password
+            - name: FINERACT_TENANT_MASTERPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: fineract-default
+                  key: master-password
+            - name: fineract_tenants_pwd
+              valueFrom:
+                secretKeyRef:
+                  name: fineract-tenants
                   key: database-password
 
             - name: FINERACT_HIKARI_HOST
@@ -106,6 +128,8 @@ spec:
           volumeMounts:
             - name: fineract-storage
               mountPath: /.fineract/              
+            - name: tmp
+              mountPath: /tmp
           readinessProbe:
             httpGet:
               path: /fineract-provider/actuator/health/readiness
@@ -129,3 +153,5 @@ spec:
         - name: fineract-storage
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-backend-pvc
+        - name: tmp
+          emptyDir: {}

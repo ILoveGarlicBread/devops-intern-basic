@@ -8,33 +8,4 @@ metadata:
 data:
   kanister-dashboard.json: |-
     {
-      "title": "Kanister Backups",
-      "tags": ["kanister", "backup"],
-      "timezone": "browser",
-      "schemaVersion": 16,
-      "version": 0,
-      "refresh": "1m",
-      "panels": [
-        {
-          "type": "timeseries",
-          "title": "ActionSets Status",
-          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 0 },
-          "fieldConfig": {
-            "defaults": {
-              "custom": {
-                "drawStyle": "points",
-                "pointSize": 5,
-                "showPoints": "always"
-              }
-            }
-          },
-          "targets": [
-            {
-              "expr": "kube_customresource_kanister_actionset_state",
-              "legendFormat": "{{name}} - {{state}}",
-              "refId": "A"
-            }
-          ]
-        }
-      ]
     }

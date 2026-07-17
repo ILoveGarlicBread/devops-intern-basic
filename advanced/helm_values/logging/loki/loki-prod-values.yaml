@@ -23,8 +23,6 @@ loki:
       s3: s3://ap-south-1/rke2-loki-logs-20260702020323341000000002
       endpoint: s3.ap-south-1.amazonaws.com
       region: ap-south-1
-      access_key_id: ${AWS_ACCESS_KEY_ID}
-      secret_access_key: ${AWS_SECRET_ACCESS_KEY}
 
   compactor:
     working_directory: /var/loki/compactor

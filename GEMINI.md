@@ -1,3 +1,13 @@
+# ⚠️ TEMPORARY CONTEXT FOR NEXT AGENT SESSION (July 2026) ⚠️
+*The user is currently waiting for AWS spot instance worker nodes to come back online.*
+
+**Current State & Next Steps for the AI:**
+1. **Nginx Ingress CVE Patching:** The custom image was successfully built, tagged as `my-dockerhub-user/nginx-ingress:v1.14.5-patched`, and loaded into the `containerd` instance on the master node (`/tmp/nginx-ingress-patched.tar` was placed in `/var/lib/rancher/rke2/agent/images/`). The RKE2 override manifest `rke2-ingress-nginx-config.yaml` was also created. However, the Helm upgrade job is stuck `Pending` because the worker nodes are `NotReady`.
+2. **Action 1 (Image Distribution):** Once the worker nodes are back up, either push the custom image to a container registry and update the HelmChartConfig, OR manually SCP `/tmp/nginx-ingress-patched.tar` from the master node to the `/var/lib/rancher/rke2/agent/images/` directory on all worker nodes so they can pull it locally.
+3. **Action 2 (Prometheus Exporter Passwords):** The user updated MySQL Exporter passwords in Vault (`monitoring` namespace). You need to restart/sync those pods. This was blocked because cluster worker nodes went into `NotReady` status. Check `kubectl get nodes` to ensure they are healthy before proceeding.
+
+---
+
 # Infrastructure Automation & Cluster Administration
 **Location:** `~/TMA-DevOps-Lam-Internship/advanced/`
 
@@ -47,11 +57,18 @@ This project manages a Kubernetes environment for Apache Fineract on AWS Spot In
 - **HTTPS/TLS:** Cert-Manager deployed with `letsencrypt-prod` ClusterIssuer. Fully functional for all ingresses.
 - **Vault TLS & Kube-bench Security Hardening:** Secured Vault communication via internal TLS and fixed K8s 1.24+ token review rejections. Executed CIS benchmark scans (`kube-bench`) and engineered Ansible playbooks to harden RKE2 Kubelet configurations (disabling anonymous auth, enforcing Webhook auth, and restricting cryptographic ciphers) across all cluster nodes.
 - **Pod Security Admissions:** Enforced Kubernetes `restricted` Pod Security standards on the `default` namespace to block privileged containers and host mounts.
+- **Trivy Vulnerability & Misconfiguration Remediation (July 2026):** Evaluated Trivy for live cluster CVE scanning but shifted to static Helm auditing (`trivy config`) due to OOM/disk limits on the `t3.medium` nodes. Successfully remediated all KSV misconfigurations (dropped capabilities, enforced `readOnlyRootFilesystem: true` using `emptyDir` mounts for `/var/cache/nginx` and `/tmp`, and enabled `runAsNonRoot: true`). Also successfully mitigated 15 HIGH/CRITICAL CVEs in `mariadb:11.4` by migrating to `bitnami/mariadb:latest`. A significant lesson was resolving `Permission denied` startup errors caused by the new non-root user (`runAsUser: 10001`) trying to access the legacy root-created StatefulSet databases—solved by injecting `fsGroup: 10001` into the Pod Security Context to trigger automatic Kubernetes volume recursive chown on mount.
+- **Fineract Multi-Tenant DB Decryption Debugging (July 2026):** Resolved a complex `CrashLoopBackOff` in `fineract-backend` after upgrading the databases via External Secrets Operator (ESO). Discovered that the `fineract_tenants` database contains a `tenant_server_connections` table with an encrypted `schema_password` for the `fineract_default` database, as well as a `master_password_hash`. When ESO rotated the master secret to a new value (`fineractnew`), Fineract failed to decrypt the legacy AES payload. The permanent fix involved:
+  1. Running Fineract's `DatabasePasswordEncryptor` Java utility manually inside a pod to generate a new AES payload (`zHsH...`) and BCrypt hash (`$2a...`) using the new `fineractnew` password.
+  2. Updating the `fineract-db-sync` CronJob to automatically execute a `mysql` query that overwrites both `schema_password` and `master_password_hash` in the database whenever the Vault secret changes.
+  3. Injecting `FINERACT_TENANT_MASTERPASSWORD` into the Fineract deployment environment variables. Without this variable, Fineract defaults to verifying the BCrypt hash against the hardcoded string `"fineract"`, which causes a `java.lang.IllegalArgumentException: Invalid master password` when using a custom password.
+- **Database Password Separation (July 2026):** Refactored the shared `password` key in Vault into three distinct credentials (`tenantDbPassword`, `defaultDbPassword`, `fineractMasterPassword`) to strictly enforce the principle of least privilege across Fineract's database routing architecture. Implemented manual rotation documentation due to Fineract's Java-based AES encryption requirements.
+
 
 ## 4. Future Security Roadmap
 - [ ] **Network Policies (Micro-segmentation):** Implement default-deny rules across all namespaces.
 - [ ] **Dynamic Secret Rotation:** Upgrade Vault from static KV v2 to Dynamic Engines for MySQL and AWS STS.
-- [ ] **RBAC Audit & Image Scanning:** Enforce least privilege (remove wildcards) and integrate image provenance/scanning (Trivy/Kyverno).
+- [ ] **RBAC Audit & Image Scanning:** Enforce least privilege (remove wildcards). Offload Trivy image CVE scanning to a CI/CD pipeline (due to cluster resource constraints), and patch existing Fineract Helm chart misconfigurations.
 ## 4. Decommissioned & Legacy Systems
 
 ### A. EFK Stack (Legacy Centralized Logging)
