@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: fineract
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'ssh://APKAS7ZMGBTBFHE4AQG3@git-codecommit.ap-south-1.amazonaws.com/v1/repos/TMA-DevOps-Lam-Internship'
+    path: advanced/fineract
+    targetRevision: main
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: fineract
+  syncPolicy:
+    syncOptions:
+    - CreateNamespace=true

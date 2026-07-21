@@ -1,0 +1,31 @@
+# ArgoCD Helm Values
+# These values optimize ArgoCD for a smaller cluster environment.
+
+# Disable HA components to save cluster resources (Worker Node CPU/RAM)
+redis-ha:
+  enabled: false
+
+# Disable Dex (SSO) as we are using the default admin account for now
+dex:
+  enabled: false
+
+server:
+  # Enable Ingress for accessing the ArgoCD UI
+  ingress:
+    enabled: true
+    ingressClassName: "nginx"
+    annotations:
+      # Force SSL redirect
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      # Required for ArgoCD's gRPC UI connections
+      nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    hosts:
+      - argocd.lblam.tma-demos.shop
+    tls:
+      - hosts:
+          - argocd.lblam.tma-demos.shop
+        secretName: argocd-tls-secret # Cert-Manager can provision this later
+
+  # Allow running insecurely locally behind the ingress
+  extraArgs:
+    - --insecure
