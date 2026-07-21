@@ -96,6 +96,7 @@ resource "aws_instance" "k8s_master" {
   instance_type          = "t3.medium"
   key_name               = aws_key_pair.k8s_ssh_key.id
   vpc_security_group_ids = [aws_security_group.k8s_sg.id]
+  iam_instance_profile   = aws_iam_instance_profile.worker_profile.name
 
   root_block_device {
     volume_size           = 30

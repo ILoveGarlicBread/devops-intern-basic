@@ -2,9 +2,9 @@
 *The user is currently waiting for AWS spot instance worker nodes to come back online.*
 
 **Current State & Next Steps for the AI:**
-1. **Nginx Ingress CVE Patching:** The custom image was successfully built, tagged as `my-dockerhub-user/nginx-ingress:v1.14.5-patched`, and loaded into the `containerd` instance on the master node (`/tmp/nginx-ingress-patched.tar` was placed in `/var/lib/rancher/rke2/agent/images/`). The RKE2 override manifest `rke2-ingress-nginx-config.yaml` was also created. However, the Helm upgrade job is stuck `Pending` because the worker nodes are `NotReady`.
-2. **Action 1 (Image Distribution):** Once the worker nodes are back up, either push the custom image to a container registry and update the HelmChartConfig, OR manually SCP `/tmp/nginx-ingress-patched.tar` from the master node to the `/var/lib/rancher/rke2/agent/images/` directory on all worker nodes so they can pull it locally.
-3. **Action 2 (Prometheus Exporter Passwords):** The user updated MySQL Exporter passwords in Vault (`monitoring` namespace). You need to restart/sync those pods. This was blocked because cluster worker nodes went into `NotReady` status. Check `kubectl get nodes` to ensure they are healthy before proceeding.
+1. **Nginx Ingress CVE Patching:** Custom image built and loaded to master node. Needs to be distributed to worker nodes (SCP or registry) once they stabilize.
+2. **Kanister Backups:** Fixed the network timeout issue in the logical backup blueprint by migrating to `mysql-sidecar:0.118.0` and fixing `kando` syntax. Backups run perfectly, but currently blocked by AWS Spot Instance reclamation tearing down worker nodes mid-backup.
+3. **CI/CD (ArgoCD):** Shifted focus to GitOps. Drafted ArgoCD deployment guides (`ARGOCD_GUIDE.md`) and custom Helm values. Installation is currently on hold until AWS provisions stable worker nodes.
 
 ---
 
@@ -63,6 +63,8 @@ This project manages a Kubernetes environment for Apache Fineract on AWS Spot In
   2. Updating the `fineract-db-sync` CronJob to automatically execute a `mysql` query that overwrites both `schema_password` and `master_password_hash` in the database whenever the Vault secret changes.
   3. Injecting `FINERACT_TENANT_MASTERPASSWORD` into the Fineract deployment environment variables. Without this variable, Fineract defaults to verifying the BCrypt hash against the hardcoded string `"fineract"`, which causes a `java.lang.IllegalArgumentException: Invalid master password` when using a custom password.
 - **Database Password Separation (July 2026):** Refactored the shared `password` key in Vault into three distinct credentials (`tenantDbPassword`, `defaultDbPassword`, `fineractMasterPassword`) to strictly enforce the principle of least privilege across Fineract's database routing architecture. Implemented manual rotation documentation due to Fineract's Java-based AES encryption requirements.
+- **Kanister Blueprint Network Fix (July 2026):** Diagnosed 18 historical backup failures. The default blueprint tried to `microdnf install mysql`, which timed out in the restricted environment. Completely rewrote the blueprint to use `ghcr.io/kanisterio/mysql-sidecar:0.118.0` (pre-installed tools) and corrected `kando` CLI flag syntax, successfully resuming logical S3 backups.
+- **CI/CD GitOps Architecture Design (July 2026):** Designed the architecture for migrating from manual Helm deployments to a pull-based ArgoCD GitOps model. Documented the App of Apps pattern, CI/CD segregation, and Brownfield cluster adoption methodologies. Drafted initial ArgoCD installation manifests (staged, awaiting node stability).
 
 
 ## 4. Future Security Roadmap
