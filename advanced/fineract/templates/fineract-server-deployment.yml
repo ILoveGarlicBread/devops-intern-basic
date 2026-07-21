@@ -92,7 +92,10 @@ spec:
                   name: fineract-default
                   key: database-password
             - name: FINERACT_TENANT_MASTERPASSWORD
-              value: "fineractnew"
+              valueFrom:
+                secretKeyRef:
+                  name: fineract-default
+                  key: master-password
             - name: fineract_tenants_pwd
               valueFrom:
                 secretKeyRef:
