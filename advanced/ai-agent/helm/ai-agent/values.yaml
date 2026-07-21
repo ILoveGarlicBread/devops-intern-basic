@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: ai-agent
+  repository: 205714230466.dkr.ecr.ap-south-1.amazonaws.com/ai-agent
   pullPolicy: IfNotPresent
   tag: "latest"
 
