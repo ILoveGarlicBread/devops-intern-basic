@@ -1,0 +1,42 @@
+replicaCount: 1
+
+image:
+  repository: ai-agent
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+env:
+  # Using AWS default credentials chain
+  # Or provide AWS_REGION and credentials via secret if not using IAM Roles
+  - name: AWS_REGION
+    value: "us-east-1"
