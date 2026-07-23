@@ -43,3 +43,21 @@ env:
   # Or provide AWS_REGION and credentials via secret if not using IAM Roles
   - name: AWS_REGION
     value: "us-east-1"
+
+autoscaling:
+  enabled: false
+
+affinity: {}
+nodeSelector: {}
+tolerations: []
+podLabels: {}
+volumeMounts: []
+volumes: []
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
