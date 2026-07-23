@@ -20,9 +20,9 @@ data:
     
     echo "Updating tenant_server_connections for fineract_default..."
     # Note: The schema_password MUST be AES encrypted using Fineract's DatabasePasswordEncryptor logic using the Master Password. 
-    # For now, this is pre-computed for 'fineractnew' since the mysql:8.0 image lacks Java to dynamically generate it.
+    # For now, this is pre-computed for 'fineract-master-secret' since the mysql:8.0 image lacks Java to dynamically generate it.
     if [ "$MASTER_PWD" = "fineract-master-secret" ] && [ "$DEFAULT_DB_PWD" = "default-db-secret" ]; then
-      mysql -h fineract-tenants -u root -p"$TENANTS_ROOT_PWD" -e "UPDATE fineract_tenants.tenant_server_connections SET schema_password = '4Tsjz6VJvNWkHn7VqDsguc0xgrmnpU/SZWVJ6/nVEqk/bd4goMrVEk/sqRwYOcfc6Cu6wN8vqwR6Pu4DnjRhpA==', master_password_hash = '\$2a\$10\$XPcq.teaaoTaUFUUx.JcZuPCz/41thSGem2qx6kI4Z2IHI3OtSfiW' WHERE schema_name = 'fineract_default';"
+      mysql -h fineract-tenants -u root -p"$TENANTS_ROOT_PWD" -e "UPDATE fineract_tenants.tenant_server_connections SET schema_password = 'EbggxeOcIxQgaJEXnjtfTs4myRPNSkH8AjQeyx9WOJ8ZxW4Y+g9dsKZq2QwNqcSFMnYVe9+Jw7jaOwjMkkegUg==', master_password_hash = '\$2a\$10\$JFhZvQ8fxlRAEsCS1kC3NuQ7QiN31QJ4JxzrZczmiSS5L0tGRbuoS' WHERE schema_name = 'fineract_default';"
     fi
     echo "Sync successful. Both locks re-keyed."
 ---

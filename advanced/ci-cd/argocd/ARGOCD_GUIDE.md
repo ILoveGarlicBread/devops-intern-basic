@@ -53,5 +53,17 @@ Log in at `https://localhost:8080` using the username `admin` and the extracted 
 To hand over your existing Fineract stack to ArgoCD:
 1. Ensure your Git repo perfectly matches the live cluster state.
 2. Create an ArgoCD Application pointing to the `fineract` namespace with **Auto-Sync OFF**.
-3. Review the visual diff in the ArgoCD UI.
-4. Click "Sync" to allow ArgoCD to inject its tracking annotations (`argocd.argoproj.io/tracking-id`) and adopt the resources without downtime.
+5. Review the visual diff in the ArgoCD UI.
+6. Click "Sync" to allow ArgoCD to inject its tracking annotations (`argocd.argoproj.io/tracking-id`) and adopt the resources without downtime.
+
+## 5. Deployed Applications (Current State)
+
+### A. Fineract Domain App (Brownfield)
+*   **Repo**: `https://git-codecommit.ap-south-1.amazonaws.com/v1/repos/TMA-DevOps-Lam-Internship`
+*   **Path**: `advanced/fineract`
+*   **Status**: Created. **Requires Git Repository Credentials in ArgoCD to perform initial sync.** Auto-sync is currently turned **OFF** to safely perform brownfield adoption of the existing Fineract stack.
+
+### B. AI Agent Application (Upcoming)
+*   **Repo**: `ai-agent` (CodeCommit)
+*   **Description**: A simple OpenAI Agent SDK (routed to AWS Bedrock Anthropic Claude 3 Haiku) deployed via Helm chart.
+*   **Status**: Pending creation of repo, CI/CD pipeline, and Helm chart.

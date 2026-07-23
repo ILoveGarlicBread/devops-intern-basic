@@ -9,7 +9,7 @@ spec:
   project: default
   source:
     repoURL: 'ssh://APKAS7ZMGBTBFHE4AQG3@git-codecommit.ap-south-1.amazonaws.com/v1/repos/TMA-DevOps-Lam-Internship'
-    path: ai-agent/helm/ai-agent
+    path: advanced/ai-agent/helm/ai-agent
     targetRevision: main
   destination:
     server: 'https://kubernetes.default.svc'
