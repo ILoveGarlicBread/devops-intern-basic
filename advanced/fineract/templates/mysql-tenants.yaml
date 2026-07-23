@@ -15,7 +15,6 @@ spec:
   serviceName: fineract-tenants
   replicas: 1
   revisionHistoryLimit: 10
-  test: false
   selector:
     matchLabels:
       app: fineract-tenants
