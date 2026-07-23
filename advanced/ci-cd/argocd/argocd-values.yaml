@@ -29,3 +29,10 @@ server:
   # Allow running insecurely locally behind the ingress
   extraArgs:
     - --insecure
+
+repoServer:
+  livenessProbe:
+    timeoutSeconds: 15
+    failureThreshold: 5
+  readinessProbe:
+    timeoutSeconds: 15
