@@ -132,9 +132,40 @@ spec:
     - podSelector:
         matchLabels:
           app: fineract-business-exporter
+    - podSelector:
+        matchLabels:
+          createdBy: kanister
     - namespaceSelector:
         matchLabels:
           kubernetes.io/metadata.name: monitoring
+
+---
+# 9. KANISTER BACKUP POLICY
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: kanister-backup-policy
+  namespace: fineract
+spec:
+  podSelector:
+    matchLabels:
+      createdBy: kanister
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - podSelector:
+        matchExpressions:
+        - key: app
+          operator: In
+          values:
+          - fineract-default
+          - fineract-tenants
+  - ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80
 
 ---
 # 7. BUSINESS EXPORTER POLICY
