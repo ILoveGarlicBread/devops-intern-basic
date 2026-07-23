@@ -27,12 +27,9 @@ if __name__ == "__main__":
     proxy = start_litellm_proxy()
     
     try:
-        # Initialize OpenAI client pointing to LiteLLM proxy
-        client = OpenAI(
-            base_url="http://localhost:4000",
-            api_key="dummy-key" # LiteLLM will use AWS credentials from env
-        )
-
+        os.environ["OPENAI_BASE_URL"] = "http://localhost:4000"
+        os.environ["OPENAI_API_KEY"] = "dummy-key"
+        
         my_agent = Agent(
             name="BedrockAssistant",
             instructions="You are a helpful assistant powered by AWS Bedrock (Claude 3 Haiku).",
@@ -40,14 +37,14 @@ if __name__ == "__main__":
         )
 
         print("Agent is ready! (Type 'exit' to quit)")
-        runner = Runner(agent=my_agent, client=client)
+        runner = Runner()
         
         while True:
             user_input = input("User: ")
             if user_input.lower() in ['exit', 'quit']:
                 break
             
-            response = runner.run(user_input)
+            response = runner.run_sync(starting_agent=my_agent, input=user_input)
             print(f"Agent: {response.final_output}")
             
     finally:
