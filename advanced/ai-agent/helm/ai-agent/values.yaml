@@ -5,7 +5,8 @@ image:
   pullPolicy: IfNotPresent
   tag: "latest"
 
-imagePullSecrets: []
+imagePullSecrets:
+  - name: ecr-registry-secret
 nameOverride: ""
 fullnameOverride: ""
 
