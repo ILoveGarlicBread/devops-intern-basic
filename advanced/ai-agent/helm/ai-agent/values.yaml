@@ -27,6 +27,9 @@ service:
 ingress:
   enabled: false
 
+httpRoute:
+  enabled: false
+
 resources:
   requests:
     cpu: 100m
