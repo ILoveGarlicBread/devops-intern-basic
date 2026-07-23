@@ -54,11 +54,5 @@ tolerations: []
 podLabels: {}
 volumeMounts: []
 volumes: []
-livenessProbe:
-  httpGet:
-    path: /
-    port: http
-readinessProbe:
-  httpGet:
-    path: /
-    port: http
+livenessProbe: {}
+readinessProbe: {}
