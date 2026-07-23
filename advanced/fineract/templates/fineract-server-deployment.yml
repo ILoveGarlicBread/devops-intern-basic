@@ -134,13 +134,13 @@ spec:
             httpGet:
               path: /fineract-provider/actuator/health/readiness
               port: 8080
-            initialDelaySeconds: 900
+            initialDelaySeconds: 180
             timeoutSeconds: 5
           livenessProbe:
             httpGet:
               path: /fineract-provider/actuator/health/liveness
               port: 8080
-            initialDelaySeconds: 900
+            initialDelaySeconds: 600
             timeoutSeconds: 10
           resources:
             requests:
