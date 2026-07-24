@@ -38,7 +38,7 @@ data:
         # Force catch the UI config request and answer it dynamically
         location = /configs.json {
             default_type application/json;
-            return 200 '{"baseApiUrl":"http://fineract.lblam.tma-demos.shop/fineract-provider/api/v1","apiProvider":"/fineract-provider/api/v1","tenantIdentifier":"default"}';
+            return 200 '{"baseApiUrl":"https://fineract.lblam.tma-demos.shop/fineract-provider/api/v1","apiProvider":"/fineract-provider/api/v1","tenantIdentifier":"default"}';
         }
 
         # Direct structural assets to the UI service
