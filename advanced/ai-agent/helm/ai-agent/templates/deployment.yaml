@@ -47,7 +47,7 @@ spec:
             mountPath: /app/config.yaml
             subPath: config.yaml
           command: ["/bin/bash", "-c"]
-          args: ["pip install prisma litellm && litellm --config /app/config.yaml --port 4000 & sleep 5 && python main.py"]
+          args: ["pip install prisma litellm && litellm --config /app/litellm_config.yaml --port 4000 & sleep 5 && python main.py"]
           stdin: true
           tty: true
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
