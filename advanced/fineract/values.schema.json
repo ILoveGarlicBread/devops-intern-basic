@@ -1,518 +1,540 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "additionalProperties": false,
-  "properties": {
-    "fineractServer": {
-      "additionalProperties": false,
-      "properties": {
-        "extraEnv": {
-          "additionalProperties": true,
-          "description": "Dictionary of key/value pairs to pass as environment variables to the backend pods\nThey will be evaluated as Helm templates",
-          "properties": {
-            "DRIVERCLASS_NAME": {
-              "default": "com.mysql.cj.jdbc.Driver",
-              "required": [],
-              "title": "DRIVERCLASS_NAME",
-              "type": "string"
-            },
-            "FINERACT_DEFAULT_TENANTDB_PORT": {
-              "default": "3306",
-              "required": [],
-              "title": "FINERACT_DEFAULT_TENANTDB_PORT",
-              "type": "string"
-            },
-            "LOG_OUTPUT_TYPE": {
-              "default": "console_plain",
-              "required": [],
-              "title": "LOG_OUTPUT_TYPE",
-              "type": "string"
-            },
-            "PROTOCOL": {
-              "default": "jdbc",
-              "required": [],
-              "title": "PROTOCOL",
-              "type": "string"
-            },
-            "SUB_PROTOCOL": {
-              "default": "mysql",
-              "required": [],
-              "title": "SUB_PROTOCOL",
-              "type": "string"
-            },
-            "fineract_tenants_driver": {
-              "default": "com.mysql.cj.jdbc.Driver",
-              "required": [],
-              "title": "fineract_tenants_driver",
-              "type": "string"
-            }
-          },
-          "required": [
-            "DRIVERCLASS_NAME",
-            "PROTOCOL",
-            "SUB_PROTOCOL",
-            "fineract_tenants_driver",
-            "FINERACT_DEFAULT_TENANTDB_PORT",
-            "LOG_OUTPUT_TYPE"
-          ],
-          "title": "extraEnv",
-          "type": "object"
-        },
-        "extraSecretEnv": {
-          "additionalProperties": false,
-          "description": "Same as `extraEnv` but passed as secrets",
-          "required": [],
-          "title": "extraSecretEnv",
-          "type": "object"
-        },
-        "nodeSelector": {
-          "type": "object",
-          "additionalProperties": true
-        },
-        "affinity": {
-          "type": "object",
-          "additionalProperties": true
-        },
-        "tolerations": {
-          "type": "array"
-        },
-        "image": {
-          "additionalProperties": false,
-          "properties": {
-            "name": {
-              "default": "apache/fineract",
-              "description": "Fineract Docker image name",
-              "required": [],
-              "title": "name",
-              "type": "string"
-            },
-            "tag": {
-              "default": "1.12.1",
-              "description": "Fineract Docker image tag",
-              "required": [],
-              "title": "tag",
-              "type": "string"
-            }
-          },
-          "required": [
-            "name",
-            "tag"
-          ],
-          "title": "image",
-          "type": "object"
-        },
-        "replicas": {
-          "default": 1,
-          "description": "Number of backend pods",
-          "required": [],
-          "title": "replicas",
-          "type": "integer"
-        },
-        "resources": {
-          "additionalProperties": false,
-          "description": "Resource settings for Backend pods",
-          "properties": {
-            "limits": {
-              "additionalProperties": false,
-              "properties": {
-                "cpu": {
-                  "default": "4000m",
-                  "required": [],
-                  "title": "cpu",
-                  "type": "string"
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "properties": {
+        "fineractServer": {
+            "additionalProperties": false,
+            "properties": {
+                "extraEnv": {
+                    "additionalProperties": true,
+                    "description": "Dictionary of key/value pairs to pass as environment variables to the backend pods\nThey will be evaluated as Helm templates",
+                    "properties": {
+                        "DRIVERCLASS_NAME": {
+                            "default": "com.mysql.cj.jdbc.Driver",
+                            "required": [],
+                            "title": "DRIVERCLASS_NAME",
+                            "type": "string"
+                        },
+                        "FINERACT_DEFAULT_TENANTDB_PORT": {
+                            "default": "3306",
+                            "required": [],
+                            "title": "FINERACT_DEFAULT_TENANTDB_PORT",
+                            "type": "string"
+                        },
+                        "LOG_OUTPUT_TYPE": {
+                            "default": "console_plain",
+                            "required": [],
+                            "title": "LOG_OUTPUT_TYPE",
+                            "type": "string"
+                        },
+                        "PROTOCOL": {
+                            "default": "jdbc",
+                            "required": [],
+                            "title": "PROTOCOL",
+                            "type": "string"
+                        },
+                        "SUB_PROTOCOL": {
+                            "default": "mysql",
+                            "required": [],
+                            "title": "SUB_PROTOCOL",
+                            "type": "string"
+                        },
+                        "fineract_tenants_driver": {
+                            "default": "com.mysql.cj.jdbc.Driver",
+                            "required": [],
+                            "title": "fineract_tenants_driver",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "DRIVERCLASS_NAME",
+                        "PROTOCOL",
+                        "SUB_PROTOCOL",
+                        "fineract_tenants_driver",
+                        "FINERACT_DEFAULT_TENANTDB_PORT",
+                        "LOG_OUTPUT_TYPE"
+                    ],
+                    "title": "extraEnv",
+                    "type": "object"
                 },
-                "memory": {
-                  "default": "16Gi",
-                  "required": [],
-                  "title": "memory",
-                  "type": "string"
-                }
-              },
-              "required": [
-                "cpu",
-                "memory"
-              ],
-              "title": "limits",
-              "type": "object"
-            }
-          },
-          "required": [
-            "limits"
-          ],
-          "title": "resources",
-          "type": "object"
-        },
-        "serviceAccount": {
-          "additionalProperties": false,
-          "description": "ServiceAccount settings",
-          "properties": {
-            "annotations": {
-              "additionalProperties": false,
-              "required": [],
-              "title": "annotations",
-              "type": "object"
-            },
-            "automount": {
-              "default": true,
-              "required": [],
-              "title": "automount",
-              "type": "boolean"
-            },
-            "create": {
-              "default": true,
-              "description": "# Specifies whether a ServiceAccount should be created\n#",
-              "required": [],
-              "title": "create",
-              "type": "boolean"
-            },
-            "name": {
-              "default": "fineractserver-sa",
-              "description": "# The name of the ServiceAccount to use.\n# If not set and create is true, a name is generated using the mysql.fullname template\n#\nname:\n# Annotations to add to the service account (evaluated as a template)\n#",
-              "required": [],
-              "title": "name",
-              "type": "string"
-            }
-          },
-          "required": [
-            "create",
-            "name",
-            "automount",
-            "annotations"
-          ],
-          "title": "serviceAccount",
-          "type": "object"
-        }
-      },
-      "required": [
-        "replicas",
-        "image",
-        "extraEnv",
-        "extraSecretEnv",
-        "resources",
-        "serviceAccount"
-      ],
-      "title": "fineractServer",
-      "type": "object"
-    },
-    "fineractUI": {
-      "additionalProperties": false,
-      "properties": {
-        "nodeSelector": {
-          "type": "object",
-          "additionalProperties": true
-        },
-        "affinity": {
-          "type": "object",
-          "additionalProperties": true
-        },
-        "tolerations": {
-          "type": "array"
-        },
-        "image": {
-          "additionalProperties": false,
-          "properties": {
-            "name": {
-              "default": "openmf/community-app",
-              "description": "Frontend Docker image name",
-              "required": [],
-              "title": "name",
-              "type": "string"
-            },
-            "tag": {
-              "default": "latest",
-              "description": "Frontend Docker image tag",
-              "required": [],
-              "title": "tag",
-              "type": "string"
-            }
-          },
-          "required": [
-            "name",
-            "tag"
-          ],
-          "title": "image",
-          "type": "object"
-        },
-        "replicas": {
-          "default": 1,
-          "description": "Number of frontend pods",
-          "required": [],
-          "title": "replicas",
-          "type": "integer"
-        },
-        "resources": {
-          "additionalProperties": false,
-          "description": "Resource settings for Backend pods",
-          "properties": {
-            "limits": {
-              "additionalProperties": false,
-              "properties": {
-                "cpu": {
-                  "default": "100m",
-                  "required": [],
-                  "title": "cpu",
-                  "type": "string"
+                "extraSecretEnv": {
+                    "additionalProperties": false,
+                    "description": "Same as `extraEnv` but passed as secrets",
+                    "required": [],
+                    "title": "extraSecretEnv",
+                    "type": "object"
                 },
-                "memory": {
-                  "default": "100Mi",
-                  "required": [],
-                  "title": "memory",
-                  "type": "string"
+                "nodeSelector": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "affinity": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "tolerations": {
+                    "type": "array"
+                },
+                "image": {
+                    "additionalProperties": false,
+                    "properties": {
+                        "name": {
+                            "default": "apache/fineract",
+                            "description": "Fineract Docker image name",
+                            "required": [],
+                            "title": "name",
+                            "type": "string"
+                        },
+                        "tag": {
+                            "default": "1.12.1",
+                            "description": "Fineract Docker image tag",
+                            "required": [],
+                            "title": "tag",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "name",
+                        "tag"
+                    ],
+                    "title": "image",
+                    "type": "object"
+                },
+                "replicas": {
+                    "default": 1,
+                    "description": "Number of backend pods",
+                    "required": [],
+                    "title": "replicas",
+                    "type": "integer"
+                },
+                "resources": {
+                    "additionalProperties": false,
+                    "description": "Resource settings for Backend pods",
+                    "properties": {
+                        "limits": {
+                            "additionalProperties": false,
+                            "properties": {
+                                "cpu": {
+                                    "default": "4000m",
+                                    "required": [],
+                                    "title": "cpu",
+                                    "type": "string"
+                                },
+                                "memory": {
+                                    "default": "16Gi",
+                                    "required": [],
+                                    "title": "memory",
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "cpu",
+                                "memory"
+                            ],
+                            "title": "limits",
+                            "type": "object"
+                        },
+                        "requests": {
+                            "additionalProperties": false,
+                            "properties": {
+                                "cpu": {
+                                    "type": "string"
+                                },
+                                "memory": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "required": [
+                        "limits"
+                    ],
+                    "title": "resources",
+                    "type": "object"
+                },
+                "serviceAccount": {
+                    "additionalProperties": false,
+                    "description": "ServiceAccount settings",
+                    "properties": {
+                        "annotations": {
+                            "additionalProperties": false,
+                            "required": [],
+                            "title": "annotations",
+                            "type": "object"
+                        },
+                        "automount": {
+                            "default": true,
+                            "required": [],
+                            "title": "automount",
+                            "type": "boolean"
+                        },
+                        "create": {
+                            "default": true,
+                            "description": "# Specifies whether a ServiceAccount should be created\n#",
+                            "required": [],
+                            "title": "create",
+                            "type": "boolean"
+                        },
+                        "name": {
+                            "default": "fineractserver-sa",
+                            "description": "# The name of the ServiceAccount to use.\n# If not set and create is true, a name is generated using the mysql.fullname template\n#\nname:\n# Annotations to add to the service account (evaluated as a template)\n#",
+                            "required": [],
+                            "title": "name",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "create",
+                        "name",
+                        "automount",
+                        "annotations"
+                    ],
+                    "title": "serviceAccount",
+                    "type": "object"
                 }
-              },
-              "required": [
-                "cpu",
-                "memory"
-              ],
-              "title": "limits",
-              "type": "object"
-            }
-          },
-          "required": [
-            "limits"
-          ],
-          "title": "resources",
-          "type": "object"
+            },
+            "required": [
+                "replicas",
+                "image",
+                "extraEnv",
+                "extraSecretEnv",
+                "resources",
+                "serviceAccount"
+            ],
+            "title": "fineractServer",
+            "type": "object"
         },
-        "serviceAccount": {
-          "additionalProperties": false,
-          "description": "ServiceAccount settings",
-          "properties": {
-            "annotations": {
-              "additionalProperties": false,
-              "required": [],
-              "title": "annotations",
-              "type": "object"
+        "fineractUI": {
+            "additionalProperties": false,
+            "properties": {
+                "nodeSelector": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "affinity": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "tolerations": {
+                    "type": "array"
+                },
+                "image": {
+                    "additionalProperties": false,
+                    "properties": {
+                        "name": {
+                            "default": "openmf/community-app",
+                            "description": "Frontend Docker image name",
+                            "required": [],
+                            "title": "name",
+                            "type": "string"
+                        },
+                        "tag": {
+                            "default": "latest",
+                            "description": "Frontend Docker image tag",
+                            "required": [],
+                            "title": "tag",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "name",
+                        "tag"
+                    ],
+                    "title": "image",
+                    "type": "object"
+                },
+                "replicas": {
+                    "default": 1,
+                    "description": "Number of frontend pods",
+                    "required": [],
+                    "title": "replicas",
+                    "type": "integer"
+                },
+                "resources": {
+                    "additionalProperties": false,
+                    "description": "Resource settings for Backend pods",
+                    "properties": {
+                        "limits": {
+                            "additionalProperties": false,
+                            "properties": {
+                                "cpu": {
+                                    "default": "100m",
+                                    "required": [],
+                                    "title": "cpu",
+                                    "type": "string"
+                                },
+                                "memory": {
+                                    "default": "100Mi",
+                                    "required": [],
+                                    "title": "memory",
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "cpu",
+                                "memory"
+                            ],
+                            "title": "limits",
+                            "type": "object"
+                        },
+                        "requests": {
+                            "additionalProperties": false,
+                            "properties": {
+                                "cpu": {
+                                    "type": "string"
+                                },
+                                "memory": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "required": [
+                        "limits"
+                    ],
+                    "title": "resources",
+                    "type": "object"
+                },
+                "serviceAccount": {
+                    "additionalProperties": false,
+                    "description": "ServiceAccount settings",
+                    "properties": {
+                        "annotations": {
+                            "additionalProperties": false,
+                            "required": [],
+                            "title": "annotations",
+                            "type": "object"
+                        },
+                        "automount": {
+                            "default": true,
+                            "required": [],
+                            "title": "automount",
+                            "type": "boolean"
+                        },
+                        "create": {
+                            "default": true,
+                            "description": "# Specifies whether a ServiceAccount should be created\n#",
+                            "required": [],
+                            "title": "create",
+                            "type": "boolean"
+                        },
+                        "name": {
+                            "default": "fineractui-sa",
+                            "description": "# The name of the ServiceAccount to use.\n# If not set and create is true, a name is generated using the mysql.fullname template\n#\nname:\n# Annotations to add to the service account (evaluated as a template)\n#",
+                            "required": [],
+                            "title": "name",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "create",
+                        "name",
+                        "automount",
+                        "annotations"
+                    ],
+                    "title": "serviceAccount",
+                    "type": "object"
+                }
             },
-            "automount": {
-              "default": true,
-              "required": [],
-              "title": "automount",
-              "type": "boolean"
+            "required": [
+                "replicas",
+                "image",
+                "resources",
+                "serviceAccount"
+            ],
+            "title": "fineractUI",
+            "type": "object"
+        },
+        "global": {
+            "additionalProperties": false,
+            "properties": {
+                "db": {
+                    "additionalProperties": false,
+                    "properties": {
+                        "defaultDb": {
+                            "default": "fineract_default",
+                            "description": "DB name for defaults db",
+                            "required": [],
+                            "title": "defaultDb",
+                            "type": "string"
+                        },
+                        "tenantsDb": {
+                            "default": "fineract_tenants",
+                            "description": "DB name for tenants db",
+                            "required": [],
+                            "title": "tenantsDb",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "tenantsDb",
+                        "defaultDb"
+                    ],
+                    "title": "db",
+                    "type": "object"
+                }
             },
-            "create": {
-              "default": true,
-              "description": "# Specifies whether a ServiceAccount should be created\n#",
-              "required": [],
-              "title": "create",
-              "type": "boolean"
+            "required": [
+                "db"
+            ],
+            "title": "global",
+            "type": "object"
+        },
+        "ingress": {
+            "additionalProperties": false,
+            "properties": {
+                "annotations": {
+                    "additionalProperties": false,
+                    "description": "Ingress annotations",
+                    "required": [],
+                    "title": "annotations",
+                    "type": "object"
+                },
+                "enabled": {
+                    "default": false,
+                    "description": "Create Ingress?",
+                    "required": [],
+                    "title": "enabled",
+                    "type": "boolean"
+                },
+                "hosts": {
+                    "description": "kubernetes.io/ingress.class: nginx\nkubernetes.io/tls-acme: \"true\"\nList of domains to serve on",
+                    "items": {
+                        "required": []
+                    },
+                    "required": [],
+                    "title": "hosts",
+                    "type": "array"
+                },
+                "tls": {
+                    "description": "TLS settings",
+                    "items": {
+                        "required": []
+                    },
+                    "required": [],
+                    "title": "tls",
+                    "type": "array"
+                }
             },
-            "name": {
-              "default": "fineractui-sa",
-              "description": "# The name of the ServiceAccount to use.\n# If not set and create is true, a name is generated using the mysql.fullname template\n#\nname:\n# Annotations to add to the service account (evaluated as a template)\n#",
-              "required": [],
-              "title": "name",
-              "type": "string"
-            }
-          },
-          "required": [
-            "create",
-            "name",
-            "automount",
-            "annotations"
-          ],
-          "title": "serviceAccount",
-          "type": "object"
+            "required": [
+                "enabled",
+                "annotations",
+                "hosts",
+                "tls"
+            ],
+            "title": "ingress",
+            "type": "object"
+        },
+        "mysql": {
+            "additionalProperties": false,
+            "description": "MySQL settings - see https://artifacthub.io/packages/helm/bitnami/mysql",
+            "properties": {
+                "nodeSelector": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "affinity": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "tolerations": {
+                    "type": "array"
+                },
+                "auth": {
+                    "additionalProperties": true,
+                    "properties": {
+                        "password": {
+                            "default": "fineract",
+                            "description": "Please change these...",
+                            "required": [],
+                            "title": "password",
+                            "type": "string"
+                        },
+                        "rootPassword": {
+                            "default": "fineract_tenants",
+                            "description": "Please change these...",
+                            "required": [],
+                            "title": "rootPassword",
+                            "type": "string"
+                        },
+                        "username": {
+                            "default": "fineract",
+                            "description": "Fineract db user",
+                            "required": [],
+                            "title": "username",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "username"
+                    ],
+                    "title": "auth",
+                    "type": "object"
+                },
+                "enabled": {
+                    "default": false,
+                    "description": "Install MySQL?",
+                    "required": [],
+                    "title": "enabled",
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "enabled",
+                "auth"
+            ],
+            "title": "mysql",
+            "type": "object"
+        },
+        "route": {
+            "additionalProperties": false,
+            "properties": {
+                "enabled": {
+                    "default": true,
+                    "required": [],
+                    "title": "enabled",
+                    "type": "boolean"
+                },
+                "host": {
+                    "default": "fineract.openshiftapps.com",
+                    "required": [],
+                    "title": "host",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "enabled",
+                "host"
+            ],
+            "title": "route",
+            "type": "object"
+        },
+        "service": {
+            "additionalProperties": false,
+            "properties": {
+                "type": {
+                    "default": "ClusterIP",
+                    "description": "Service type for Fineract and UI services",
+                    "required": [],
+                    "title": "type",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "type"
+            ],
+            "title": "service",
+            "type": "object"
         }
-      },
-      "required": [
-        "replicas",
-        "image",
-        "resources",
-        "serviceAccount"
-      ],
-      "title": "fineractUI",
-      "type": "object"
     },
-    "global": {
-      "additionalProperties": false,
-      "properties": {
-        "db": {
-          "additionalProperties": false,
-          "properties": {
-            "defaultDb": {
-              "default": "fineract_default",
-              "description": "DB name for defaults db",
-              "required": [],
-              "title": "defaultDb",
-              "type": "string"
-            },
-            "tenantsDb": {
-              "default": "fineract_tenants",
-              "description": "DB name for tenants db",
-              "required": [],
-              "title": "tenantsDb",
-              "type": "string"
-            }
-          },
-          "required": [
-            "tenantsDb",
-            "defaultDb"
-          ],
-          "title": "db",
-          "type": "object"
-        }
-      },
-      "required": [
-        "db"
-      ],
-      "title": "global",
-      "type": "object"
-    },
-    "ingress": {
-      "additionalProperties": false,
-      "properties": {
-        "annotations": {
-          "additionalProperties": false,
-          "description": "Ingress annotations",
-          "required": [],
-          "title": "annotations",
-          "type": "object"
-        },
-        "enabled": {
-          "default": false,
-          "description": "Create Ingress?",
-          "required": [],
-          "title": "enabled",
-          "type": "boolean"
-        },
-        "hosts": {
-          "description": "kubernetes.io/ingress.class: nginx\nkubernetes.io/tls-acme: \"true\"\nList of domains to serve on",
-          "items": {
-            "required": []
-          },
-          "required": [],
-          "title": "hosts",
-          "type": "array"
-        },
-        "tls": {
-          "description": "TLS settings",
-          "items": {
-            "required": []
-          },
-          "required": [],
-          "title": "tls",
-          "type": "array"
-        }
-      },
-      "required": [
-        "enabled",
-        "annotations",
-        "hosts",
-        "tls"
-      ],
-      "title": "ingress",
-      "type": "object"
-    },
-    "mysql": {
-      "additionalProperties": false,
-      "description": "MySQL settings - see https://artifacthub.io/packages/helm/bitnami/mysql",
-      "properties": {
-        "nodeSelector": {
-          "type": "object",
-          "additionalProperties": true
-        },
-        "affinity": {
-          "type": "object",
-          "additionalProperties": true
-        },
-        "tolerations": {
-          "type": "array"
-        },
-        "auth": {
-          "additionalProperties": true,
-          "properties": {
-            "password": {
-              "default": "fineract",
-              "description": "Please change these...",
-              "required": [],
-              "title": "password",
-              "type": "string"
-            },
-            "rootPassword": {
-              "default": "fineract_tenants",
-              "description": "Please change these...",
-              "required": [],
-              "title": "rootPassword",
-              "type": "string"
-            },
-            "username": {
-              "default": "fineract",
-              "description": "Fineract db user",
-              "required": [],
-              "title": "username",
-              "type": "string"
-            }
-          },
-          "required": [
-            "username"
-          ],
-          "title": "auth",
-          "type": "object"
-        },
-        "enabled": {
-          "default": false,
-          "description": "Install MySQL?",
-          "required": [],
-          "title": "enabled",
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "enabled",
-        "auth"
-      ],
-      "title": "mysql",
-      "type": "object"
-    },
-    "route": {
-      "additionalProperties": false,
-      "properties": {
-        "enabled": {
-          "default": true,
-          "required": [],
-          "title": "enabled",
-          "type": "boolean"
-        },
-        "host": {
-          "default": "fineract.openshiftapps.com",
-          "required": [],
-          "title": "host",
-          "type": "string"
-        }
-      },
-      "required": [
-        "enabled",
-        "host"
-      ],
-      "title": "route",
-      "type": "object"
-    },
-    "service": {
-      "additionalProperties": false,
-      "properties": {
-        "type": {
-          "default": "ClusterIP",
-          "description": "Service type for Fineract and UI services",
-          "required": [],
-          "title": "type",
-          "type": "string"
-        }
-      },
-      "required": [
-        "type"
-      ],
-      "title": "service",
-      "type": "object"
-    }
-  },
-  "required": [
-    "fineractServer",
-    "fineractUI",
-    "global",
-    "route",
-    "mysql",
-    "service",
-    "ingress"
-  ],
-  "type": "object"
+    "required": [
+        "fineractServer",
+        "fineractUI",
+        "global",
+        "route",
+        "mysql",
+        "service",
+        "ingress"
+    ],
+    "type": "object"
 }
