@@ -42,9 +42,10 @@ spec:
           env:
             {{- toYaml .Values.env | nindent 12 }}
           {{- end }}
-          envFrom:
-            - secretRef:
-                name: {{ include "ai-agent.fullname" . }}-aws-creds
+          volumeMounts:
+          - name: litellm-config-vol
+            mountPath: /app/config.yaml
+            subPath: config.yaml
           command: ["/bin/bash", "-c"]
           args: ["pip install prisma && python main.py"]
           stdin: true
