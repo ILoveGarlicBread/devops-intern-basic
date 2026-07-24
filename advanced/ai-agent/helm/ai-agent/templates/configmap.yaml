@@ -28,7 +28,7 @@ data:
             instructions="You are a helpful assistant powered by AWS Bedrock (Claude 3 Haiku).",
             tools=[get_weather],
             model=OpenAIChatCompletionsModel(
-                model="openai.gpt-oss-120b", 
+                model="anthropic.claude-haiku-4-5", 
                 openai_client=client
             )
         )
