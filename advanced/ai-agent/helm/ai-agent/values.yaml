@@ -37,7 +37,7 @@ resources:
     memory: 128Mi
   limits:
     cpu: 500m
-    memory: 256Mi
+    memory: 1Gi
 
 env:
   # Using AWS default credentials chain
@@ -52,7 +52,13 @@ affinity: {}
 nodeSelector: {}
 tolerations: []
 podLabels: {}
-volumeMounts: []
-volumes: []
+volumeMounts:
+  - name: main-py-script
+    mountPath: /app/main.py
+    subPath: main.py
+volumes:
+  - name: main-py-script
+    configMap:
+      name: ai-agent-config
 livenessProbe: {}
 readinessProbe: {}

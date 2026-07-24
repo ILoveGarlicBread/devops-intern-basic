@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ai-agent.fullname" . }}-config
+  labels:
+    {{- include "ai-agent.labels" . | nindent 4 }}
+data:
+  main.py: |-
+$(cat /home/ubuntu/TMA-DevOps-Lam-Internship/advanced/ai-agent/app/main.py | sed 's/^/    /')
