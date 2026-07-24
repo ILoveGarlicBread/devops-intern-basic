@@ -29,6 +29,7 @@ data:
         def health(): return 'OK'
 
         @app.post('/v1/chat/completions')
+        @app.post('/chat/completions')
         async def chat(request: Request):
             return {
                 "id": "mock",
