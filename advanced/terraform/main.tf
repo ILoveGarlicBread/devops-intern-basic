@@ -630,7 +630,8 @@ resource "aws_iam_policy" "worker_bedrock_policy" {
         Effect = "Allow"
         Action = [
           "bedrock:InvokeModel",
-          "bedrock:InvokeModelWithResponseStream"
+          "bedrock:InvokeModelWithResponseStream",
+          "bedrock-mantle:*"
         ]
         Resource = "*"
       }

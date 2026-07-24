@@ -9,7 +9,6 @@ data:
     import os
     import time
     from openai import AsyncOpenAI
-    from aws_bedrock_token_generator import provide_token
     from agents import Agent, Runner, function_tool
     from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
     
@@ -19,17 +18,17 @@ data:
         return f"The weather in {location} is 72 degrees and sunny."
     
     if __name__ == "__main__":
-        print("Connecting to AWS Bedrock via OpenAI-compatible endpoint with IAM Token...")
+        print("Connecting to AWS Bedrock via LiteLLM...")
         client = AsyncOpenAI(
-            base_url="https://bedrock-mantle.ap-south-1.api.aws/v1",
-            api_key=provide_token()
+            base_url="http://localhost:4000/v1",
+            api_key="sk-litellm-proxy-key"
         )
         my_agent = Agent(
             name="BedrockAssistant",
-            instructions="You are a helpful assistant powered by AWS Bedrock (Gemma 3).",
+            instructions="You are a helpful assistant powered by AWS Bedrock (Claude 3 Haiku).",
             tools=[get_weather],
             model=OpenAIChatCompletionsModel(
-                model="google.gemma-3-4b-it", 
+                model="bedrock/anthropic.claude-3-haiku-20240307-v1:0", 
                 openai_client=client
             )
         )
