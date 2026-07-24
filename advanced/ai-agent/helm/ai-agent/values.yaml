@@ -43,7 +43,7 @@ env:
   # Using AWS default credentials chain
   # Or provide AWS_REGION and credentials via secret if not using IAM Roles
   - name: AWS_REGION
-    value: "us-east-1"
+    value: "ap-south-1"
 
 autoscaling:
   enabled: false
