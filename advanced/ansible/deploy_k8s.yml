@@ -26,7 +26,7 @@
         dest: /etc/rancher/rke2/config.yaml
         mode: '0600'
         content: |
-          token: "{{ lookup('aws_secret', 'rke2-cluster-token', region='ap-south-1') }}"
+          token: "fineract-cluster-secret-2026"
           tls-san:
             - "{{ ansible_host }}"
 
@@ -53,13 +53,7 @@
         state: directory
         mode: '0755'
 
-    - name: Generate RKE2 Agent config file
-      copy:
-        dest: /etc/rancher/rke2/config.yaml
-        mode: '0600'
-        content: |
-          server: https://{{ hostvars[groups['master'][0]]['ansible_host'] }}:9345
-          token: "{{ lookup('aws_secret', 'rke2-cluster-token', region='ap-south-1') }}"
+    # We omit 'Generate RKE2 Agent config file' because terraform user_data provides the correct one with node-labels.
 
     - name: Run RKE2 Agent Installer Script
       shell: "curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE='agent' sh -"

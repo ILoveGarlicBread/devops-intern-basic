@@ -10,6 +10,7 @@
 
     - name: Deploy External Secrets Operator via Helm
       kubernetes.core.helm:
+        kubeconfig: /etc/rancher/rke2/rke2.yaml
         name: external-secrets
         chart_ref: external-secrets/external-secrets
         release_namespace: external-secrets

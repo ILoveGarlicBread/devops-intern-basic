@@ -3,6 +3,17 @@
   hosts: master
   become: yes
   tasks:
+    - name: Ensure pip is installed
+      apt:
+        name: python3-pip
+        state: present
+        update_cache: yes
+
+    - name: Ensure kubernetes python module is installed
+      pip:
+        name: kubernetes
+        state: present
+
     - name: Add Prometheus Community Helm Repository
       kubernetes.core.helm_repository:
         name: prometheus-community
@@ -16,13 +27,21 @@
         kind: Namespace
         state: present
 
+    - name: Create fineract namespace
+      kubernetes.core.k8s:
+        kubeconfig: /etc/rancher/rke2/rke2.yaml
+        name: fineract
+        api_version: v1
+        kind: Namespace
+        state: present
+
     - name: Deploy Kube-Prometheus-Stack
       kubernetes.core.helm:
         kubeconfig: /etc/rancher/rke2/rke2.yaml
         name: prometheus-stack
         chart_ref: prometheus-community/kube-prometheus-stack
         release_namespace: monitoring
-        version: 86.3.1
+        chart_version: 86.3.1
         values_files:
           - /home/ubuntu/TMA-DevOps-Lam-Internship/advanced/helm_values/monitoring/prometheus-values.yaml
 
@@ -32,7 +51,7 @@
         name: mysql-exporter-default
         chart_ref: prometheus-community/prometheus-mysql-exporter
         release_namespace: monitoring
-        version: 2.14.0
+        chart_version: 2.14.0
         values_files:
           - /home/ubuntu/TMA-DevOps-Lam-Internship/advanced/helm_values/monitoring/mysql-default-values.yaml
 
@@ -42,7 +61,7 @@
         name: mysql-exporter-tenants
         chart_ref: prometheus-community/prometheus-mysql-exporter
         release_namespace: monitoring
-        version: 2.14.0
+        chart_version: 2.14.0
         values_files:
           - /home/ubuntu/TMA-DevOps-Lam-Internship/advanced/helm_values/monitoring/mysql-tenants-values.yaml
 
@@ -59,4 +78,3 @@
         - fineract-business-dashboard.yaml
         - mysql-dashboard-cm.yaml
         - kanister-dashboard-cm.yaml
-        - s3-dashboard-cm.yaml

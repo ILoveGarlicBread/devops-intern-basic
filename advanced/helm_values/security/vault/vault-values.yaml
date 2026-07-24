@@ -6,7 +6,6 @@ server:
       name: vault-tls
   extraEnvironmentVars:
     VAULT_CACERT: /vault/userconfig/vault-tls/ca.crt
-    VAULT_ADDR: "https://127.0.0.1:8200"
   dataStorage:
     size: 1Gi
   affinity: ""
@@ -46,8 +45,6 @@ injector:
 serverTelemetry:
   serviceMonitor:
     enabled: true
-    selectors:
-      matchLabels:
-        app.kubernetes.io/name: vault
+    selectors: {}
   prometheusRules:
     enabled: true

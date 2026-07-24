@@ -48,3 +48,4 @@ def lambda_handler(event, context):
             elif current_hour == 1 and current_minute == 30 and state == 'stopped' and 'AutoStart' in tags:
                 print(f"Scheduled Morning Start: Starting {id}...")
                 ec2.start_instances(InstanceIds=[id])
+

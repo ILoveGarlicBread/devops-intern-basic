@@ -19,32 +19,8 @@ kubectl create namespace vault
 helm repo add hashicorp https://helm.releases.hashicorp.com
 helm repo update
 
-# 3. Create a values file for High Availability
-cat <<EOF > vault-ha-values.yaml
-server:
-  dataStorage:
-    size: 1Gi
-  affinity: ""
-  ha:
-    enabled: true
-    replicas: 3
-    raft:
-      enabled: true
-      setNodeId: true
-      config: |
-        ui = true
-        listener "tcp" {
-          tls_disable = 1
-          address = "[::]:8200"
-          cluster_address = "[::]:8201"
-        }
-        storage "raft" {
-          path = "/vault/data"
-        }
-EOF
-
-# 4. Deploy Vault
-helm install vault hashicorp/vault -n vault -f vault-ha-values.yaml
+# 3. Deploy Vault
+helm install vault hashicorp/vault -n vault -f vault-values.yaml
 ```
 
 *Note: In this guide we use `tls_disable = 1` to simplify internal cluster routing for learning. In a strict enterprise, you would provision TLS certificates for the Vault pods. We also request `1Gi` storage to avoid overwhelming learning clusters.*

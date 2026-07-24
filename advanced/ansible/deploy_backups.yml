@@ -35,7 +35,7 @@
         name: kanister-operator
         chart_ref: kanister/kanister-operator
         release_namespace: kanister
-        version: 0.113.0
+        chart_version: 0.113.0
 
     - name: Deploy Velero
       kubernetes.core.helm:

@@ -21,31 +21,37 @@ data:
     def start_litellm_proxy():
         print("Starting Mock AI Server (Bedrock Blocked)...")
         mock_code = """
-import uvicorn
-from fastapi import FastAPI, Request
-app = FastAPI()
+        import uvicorn
+        from fastapi import FastAPI, Request
+        app = FastAPI()
 
-@app.get('/health')
-def health(): return 'OK'
+        @app.get('/health')
+        def health(): return 'OK'
 
-@app.post('/v1/chat/completions')
-async def chat(request: Request):
-    return {
-        "id": "mock",
-        "object": "chat.completion",
-        "created": 1234,
-        "model": "mock",
-        "choices": [{
-            "message": {
-                "role": "assistant",
-                "content": "Hello! I am your AI Agent running perfectly inside Kubernetes. AWS Bedrock is blocked by a support ticket constraint on your AWS account, but my internal python logic, networking, and agent framework are working flawlessly!"
-            },
-            "finish_reason": "stop",
-            "index": 0
-        }]
-    }
-uvicorn.run(app, host='0.0.0.0', port=4000)
-"""
+        @app.post('/v1/chat/completions')
+        async def chat(request: Request):
+            return {
+                "id": "mock",
+                "object": "chat.completion",
+                "created": 1234,
+                "model": "mock",
+                "choices": [{
+                    "message": {
+                        "role": "assistant",
+                        "content": "Hello! I am your AI Agent running perfectly inside Kubernetes. AWS Bedrock is blocked by a support ticket constraint on your AWS account, but my internal python logic, networking, and agent framework are working flawlessly!"
+                    },
+                    "finish_reason": "stop",
+                    "index": 0
+                }]
+            }
+        
+        if __name__ == '__main__':
+            uvicorn.run(app, host='0.0.0.0', port=4000)
+        """
+        # dedent the code before writing
+        import textwrap
+        mock_code = textwrap.dedent(mock_code)
+        
         import sys
         import urllib.request
         with open('/tmp/mock_api.py', 'w') as f:

@@ -104,13 +104,14 @@ resource "aws_instance" "k8s_master" {
     delete_on_termination = true
   }
 
-  instance_market_options {
-    market_type = "spot"
-    spot_options {
-      instance_interruption_behavior = "stop"
-      spot_instance_type             = "persistent"
-    }
-  }
+  # Removed Spot options to run as On-Demand (within $88 budget)
+  # instance_market_options {
+  #   market_type = "spot"
+  #   spot_options {
+  #     instance_interruption_behavior = "stop"
+  #     spot_instance_type             = "persistent"
+  #   }
+  # }
 
   tags = {
     Name      = "RKE2-Master"
@@ -204,9 +205,9 @@ resource "aws_route53_record" "fineract_subdomain" {
 # --- WORKER NODES (HETEROGENEOUS SPOT CLUSTER) ---
 locals {
   worker_config = {
-    "1" = { name = "Fineract-Core", type = "t3a.large", workload = "fineract" },
-    "2" = { name = "App-Stack",     type = "t3a.large", workload = "apps" },
-    "3" = { name = "Messaging-Ops", type = "t3a.large", workload = "messaging" }
+    "1" = { name = "Fineract-Core", type = "t3.large", workload = "fineract" },
+    "2" = { name = "App-Stack",     type = "t3.large", workload = "apps" },
+    "3" = { name = "Messaging-Ops", type = "t3.large", workload = "messaging" }
   }
 }
 
@@ -221,16 +222,17 @@ resource "aws_instance" "k8s_worker" {
   root_block_device {
     volume_size           = 60
     volume_type           = "gp3"
-    delete_on_termination = false # Keeps your data safe permanently
+    delete_on_termination = true
   }
 
-  instance_market_options {
-    market_type = "spot"
-    spot_options {
-      instance_interruption_behavior = "stop"
-      spot_instance_type             = "persistent"
-    }
-  }
+  # Removed Spot options to run as On-Demand (within $88 budget)
+  # instance_market_options {
+  #   market_type = "spot"
+  #   spot_options {
+  #     instance_interruption_behavior = "stop"
+  #     spot_instance_type             = "persistent"
+  #   }
+  # }
 
   user_data = <<-EOF
               #!/bin/bash
@@ -615,5 +617,29 @@ resource "aws_iam_policy" "worker_secrets_policy" {
 resource "aws_iam_role_policy_attachment" "worker_secrets_attach" {
   role       = aws_iam_role.worker_route53_role.name
   policy_arn = aws_iam_policy.worker_secrets_policy.arn
+}
+
+resource "aws_iam_policy" "worker_bedrock_policy" {
+  name        = "rke2-worker-bedrock-policy"
+  description = "Allows worker nodes to invoke Bedrock models"
+  
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "bedrock:InvokeModel",
+          "bedrock:InvokeModelWithResponseStream"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "worker_bedrock_attach" {
+  role       = aws_iam_role.worker_route53_role.name
+  policy_arn = aws_iam_policy.worker_bedrock_policy.arn
 }
 
