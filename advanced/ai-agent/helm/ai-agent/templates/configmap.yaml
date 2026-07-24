@@ -9,6 +9,7 @@ data:
     import os
     import time
     from openai import AsyncOpenAI
+    from aws_bedrock_token_generator import provide_token
     from agents import Agent, Runner, function_tool
     from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
     
@@ -18,17 +19,17 @@ data:
         return f"The weather in {location} is 72 degrees and sunny."
     
     if __name__ == "__main__":
-        print("Connecting to AWS Bedrock via OpenAI-compatible endpoint...")
+        print("Connecting to AWS Bedrock via OpenAI-compatible endpoint with IAM Token...")
         client = AsyncOpenAI(
             base_url="https://bedrock-mantle.ap-south-1.api.aws/v1",
-            api_key="bedrock-api-key-YmVkcm9jay5hbWF6b25hd3MuY29tLz9BY3Rpb249Q2FsbFdpdGhCZWFyZXJUb2tlbiZYLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFTSUFTN1pNR0JUQlBIVVozSzIzJTJGMjAyNjA3MjQlMkZhcC1zb3V0aC0xJTJGYmVkcm9jayUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjYwNzI0VDA3MTcxNlomWC1BbXotRXhwaXJlcz00MzIwMCZYLUFtei1TZWN1cml0eS1Ub2tlbj1JUW9KYjNKcFoybHVYMlZqRURjYUNtRndMWE52ZFhSb0xURWlTREJHQWlFQXlCJTJCSCUyRjRDJTJCZ0psVXQ4Q3ZHR2xTQll1eSUyQlRmRyUyRk5iWUJhZkhEZmpBek9BQ0lRREE3U1dNR2pNT2NLY0dyNG4lMkZjOWpkazYlMkJjajRiOEU2RGltQUhrUWF1bVhDcXBBd2dBRUFBYURESXdOVGN4TkRJek1EUTJOaUlNTHBwS0J4UG1JWDBNRUU0dktvWURhaDJSbEoyOUlkc1l0OGslMkZQRUpnM2ptc3pOUXJhRmV4Y1glMkZNeW5ObVAwN0ROWGdobiUyQjh5ZUF0Uk5pUHI3JTJGSSUyQiUyQlNzbjlwR3JTcXRwR2RlTlBzU1NCMWlGOTBtTWM2T0Rxek5xTkcwbm16YmZTcW9CbHdXcXRhMndkaVBzNVZDUUtQdlBzOVpqaWFrQ3VZeExpeXhVcU5QbU1YNWNacTlxYkM1eGlCOW1BNjZ0aFV3QTNGMnV4MW12VTZTVllIVVNrUTVzMzJYS0dvU1NIV2RkVnpEcjc5NkowYSUyQmtGMSUyQjdZTlJMN3J0d3NBOWVKckNtTVI1bFNxVDIzYkF3bVVhQ0RpMnhTTThvcGYyVSUyRkFHWEFpMzY4ZGNHQkhIQll3eEgyV2N6azgyQ0JNQ3Q4MDRsd0FHa3lmNU9yU1VBMFpzWXh3MjVkUldMQll3WXFzSzF3eHNveHRwcE9Da1NDSERyTXEzTEY4T3pWekh5YXVRTU5hV2JIM0RmUGhUd1FhZmI2MEt5WEQzTlkwQXZuM0c4ak5vd0xYS09xaUhBRUpJUFo3YiUyRm9wZyUyQlMxOWhGcCUyRnZvT0lZNElUcTNlMUFoa3ZzU3d5c0dHUkhKVmJScWtLRDF1eDZjQzJqOWdybHZ6a0JyN2Z3cUpwJTJGR2xQaVVmMnlZZmV1SllOVjFnZW1YdkdaRWpRZXk0YUlNTUQlMkZpdE1HT3QwQ2d4QmF1ZlVCT2tyemMwb3ptbHBzSG1sVk5tM1BHRDV0akU3MWJ2UWtjZXU4U0VieGRrVCUyQkEzbXkyTk5rNSUyQjBKVUg2eTJoYndWOE9lYWVNMzF0SXcyQjBNVHh4UkJsTEJ1bVR2Z1haNVRUdDc0Ymw5b2YxViUyQnBRdmRQMURkTSUyQnd2Z1NPUWVrMFR2bVhzWEdxclJFNVlQMyUyQjQ5cEJsbzZvTlJWek1QdU9uNjJMUlhuSlJwVWsxd0J2ZkQxbUZmelh5MXNVOUpqUUslMkJFN0txMnBsNHE5MzRWZFhVcEVESEpITENTYm1mUU54dEh0TVhKQThmUW9nM1VCYU1KNGMlMkZLJTJGeUxCQXI3STZzeTk2VENqSlQ5aWloelJ6YUkxSWFCWU5lMyUyRjY1RSUyQjAlMkZveVRvb3l3UWxmeVFiM05wVnZjWDNNVkt2YWwzRGFSY0U2ZkF6cTNMdmI3N3BPbXZ2SVlhcURBRUFGcXBSOVBxMWtiZGR1am15SzgydHpnNHlWaVJmTk14V3psS2NzYVpDQ3IlMkJhR09MbGY0ekRQN2UwUlQ4SkVzVUFMVW92Uks2cU1wakJ2ejBQZ1doV0tua1RmTjM5Z2NnVmNyQ25FMHhaQkhGQlQlMkJFdyUzRCUzRCZYLUFtei1TaWduYXR1cmU9YmRkYjUzOTYwZDQwNDhiNGU1NjQ2MzNlNjFlZjcyMTRlOWJhMGEzZDFmNzRjMWY4OWIwNDZlNzUzODVlNTE1NiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmVmVyc2lvbj0x"
+            api_key=provide_token()
         )
         my_agent = Agent(
             name="BedrockAssistant",
-            instructions="You are a helpful assistant powered by AWS Bedrock (Claude 3 Haiku).",
+            instructions="You are a helpful assistant powered by AWS Bedrock (Gemma 3).",
             tools=[get_weather],
             model=OpenAIChatCompletionsModel(
-                model="anthropic.claude-haiku-4-5", 
+                model="google.gemma-3-4b-it", 
                 openai_client=client
             )
         )
