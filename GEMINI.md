@@ -5,6 +5,7 @@
 1. **Nginx Ingress CVE Patching:** Custom image built and loaded to master node. Needs to be distributed to worker nodes (SCP or registry) once they stabilize.
 2. **Kanister Backups:** Fixed the network timeout issue in the logical backup blueprint by migrating to `mysql-sidecar:0.118.0` and fixing `kando` syntax. Backups run perfectly. **UPDATE (July 2026):** Successfully used `.sql.gz` logical backups to restore Fineract data to a fresh cluster without corrupting GitOps state.
 3. **CI/CD (ArgoCD):** Shifted focus to GitOps. Drafted ArgoCD deployment guides (`ARGOCD_GUIDE.md`) and custom Helm values. **UPDATE (July 2026):** ArgoCD successfully deployed. Next steps: Configure the repository, adopt Fineract (brownfield), and deploy Cert-Manager / Monitoring via the App of Apps pattern.
+4. **AI Agent Integration:** Configured an AI agent using the OpenAI SDK. Deployed a local `LiteLLM` proxy within the pod to translate OpenAI tool-calling schemas into Anthropic schemas for `claude-3-haiku` via the AWS Bedrock runtime endpoint. The deployment is currently staged at `0` replicas pending an AWS Support quota increase for 3rd-party models.
 
 ---
 
@@ -66,7 +67,7 @@ This project manages a Kubernetes environment for Apache Fineract on AWS Spot In
 - **Kanister Blueprint Network Fix (July 2026):** Diagnosed 18 historical backup failures. The default blueprint tried to `microdnf install mysql`, which timed out in the restricted environment. Completely rewrote the blueprint to use `ghcr.io/kanisterio/mysql-sidecar:0.118.0` (pre-installed tools) and corrected `kando` CLI flag syntax, successfully resuming logical S3 backups.
 - **CI/CD GitOps Architecture Design (July 2026):** Designed the architecture for migrating from manual Helm deployments to a pull-based ArgoCD GitOps model. Documented the App of Apps pattern, CI/CD segregation, and Brownfield cluster adoption methodologies. Drafted initial ArgoCD installation manifests (staged, awaiting node stability).
 - **GitOps ArgoCD Migration & Fineract Restoration (July 2026):** Restored Fineract data logically via Kanister `.sql.gz` dumps from S3 to prevent Kubernetes manifest drift. Diagnosed and fixed a CORS Preflight/Mixed-Content error in the Fineract UI proxy that blocked login by updating the Helm templates to return HTTPS. Successfully deployed ArgoCD via Helm and staged for brownfield cluster adoption.
-
+- **AI Agent AWS Bedrock Integration (July 2026):** Deployed a tool-calling AI assistant (`ai-agent`) to the cluster. Discovered that the agent's custom OpenAI-based `Runner` framework was incompatible with the raw Anthropic SDK. To circumvent this without rewriting the core framework, we tested two solutions: 1) Using the Bedrock Mantle endpoint to natively query `google.gemma-3-4b-it` using dynamic IAM tokens, and 2) Deploying a local `LiteLLM` proxy within the pod's entrypoint to perform real-time translation of OpenAI tool schemas into Anthropic schemas for `claude-3-haiku`. We ultimately configured and staged the `LiteLLM` architecture, leaving it scaled to `0` pending an AWS Support quota approval for 3rd-party model access.
 
 ## 4. Future Security Roadmap
 - [ ] **Network Policies (Micro-segmentation):** Implement default-deny rules across all namespaces.
