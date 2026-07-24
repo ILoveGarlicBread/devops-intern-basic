@@ -1,9 +1,13 @@
 import os
+os.environ["OPENAI_BASE_URL"] = "http://localhost:4000"
+os.environ["OPENAI_API_KEY"] = "dummy-key"
+
 import time
 import threading
 import subprocess
-from openai import OpenAI
-from agents import Agent, Runner
+from openai import AsyncOpenAI
+from agents import Agent, Runner, function_tool
+from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
 
 def start_litellm_proxy():
     print("Starting LiteLLM proxy for AWS Bedrock...")
@@ -12,12 +16,24 @@ def start_litellm_proxy():
     cmd = [
         "litellm",
         "--model", "bedrock/anthropic.claude-3-haiku-20240307-v1:0",
-        "--port", "4000"
+        "--port", "4000",
+        "--master_key", "dummy-key"
     ]
-    proxy = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    time.sleep(3) # Wait for server to start
+    import sys
+    import urllib.request
+    proxy = subprocess.Popen(cmd, stdout=sys.stdout, stderr=sys.stderr)
+    
+    print("Waiting for proxy to become ready...")
+    for _ in range(30):
+        try:
+            urllib.request.urlopen("http://localhost:4000/health", timeout=1)
+            break
+        except Exception:
+            time.sleep(1)
+            
     return proxy
 
+@function_tool
 def get_weather(location: str):
     """Get the current weather in a given location."""
     # Dummy tool for the quickstart
@@ -27,13 +43,16 @@ if __name__ == "__main__":
     proxy = start_litellm_proxy()
     
     try:
-        os.environ["OPENAI_BASE_URL"] = "http://localhost:4000"
-        os.environ["OPENAI_API_KEY"] = "dummy-key"
         
+        client = AsyncOpenAI(base_url="http://localhost:4000", api_key="dummy-key")
         my_agent = Agent(
             name="BedrockAssistant",
             instructions="You are a helpful assistant powered by AWS Bedrock (Claude 3 Haiku).",
-            tools=[get_weather]
+            tools=[get_weather],
+            model=OpenAIChatCompletionsModel(
+                model="bedrock/anthropic.claude-3-haiku-20240307-v1:0", 
+                openai_client=client
+            )
         )
 
         print("Agent is ready! (Type 'exit' to quit)")
