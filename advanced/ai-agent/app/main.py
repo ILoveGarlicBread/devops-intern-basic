@@ -1,6 +1,8 @@
+
+
 import os
 os.environ["OPENAI_BASE_URL"] = "http://localhost:4000"
-os.environ["OPENAI_API_KEY"] = "dummy-key"
+os.environ["OPENAI_API_KEY"] = "sk-dummy-key"
 
 import time
 import threading
@@ -11,13 +13,10 @@ from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
 
 def start_litellm_proxy():
     print("Starting LiteLLM proxy for AWS Bedrock...")
-    # Start LiteLLM proxy pointing to Bedrock Haiku model
-    # Requires AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION in env
     cmd = [
         "litellm",
-        "--model", "bedrock/anthropic.claude-3-haiku-20240307-v1:0",
-        "--port", "4000",
-        "--master_key", "dummy-key"
+        "--config", "/app/litellm_config.yaml",
+        "--port", "4000"
     ]
     import sys
     import urllib.request
@@ -44,7 +43,7 @@ if __name__ == "__main__":
     
     try:
         
-        client = AsyncOpenAI(base_url="http://localhost:4000", api_key="dummy-key")
+        client = AsyncOpenAI(base_url="http://localhost:4000", api_key="sk-dummy-key")
         my_agent = Agent(
             name="BedrockAssistant",
             instructions="You are a helpful assistant powered by AWS Bedrock (Claude 3 Haiku).",

@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: litellm-config
+data:
+  config.yaml: |-
+    model_list:
+      - model_name: bedrock/anthropic.claude-3-haiku-20240307-v1:0
+        litellm_params:
+          model: bedrock/anthropic.claude-3-haiku-20240307-v1:0

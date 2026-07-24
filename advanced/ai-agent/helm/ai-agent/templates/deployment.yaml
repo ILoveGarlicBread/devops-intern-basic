@@ -45,6 +45,8 @@ spec:
           envFrom:
             - secretRef:
                 name: {{ include "ai-agent.fullname" . }}-aws-creds
+          command: ["/bin/bash", "-c"]
+          args: ["pip install prisma && python main.py"]
           stdin: true
           tty: true
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
