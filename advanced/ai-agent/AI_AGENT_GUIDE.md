@@ -50,11 +50,19 @@ Because the AI Agent runs as a continuous loop waiting for user input (`input("U
 
 To talk to the agent live in the cluster, you must attach your terminal to the running container's standard input.
 
-**Run this command to attach to the pod:**
+**Option 1: Safe Debugging (Recommended)**
+To spawn a brand new, isolated Python session inside the container without interfering with the main process, use `exec`:
+```bash
+kubectl exec -it deployment/ai-agent -n ai-agent -- python3 main.py
+```
+*Why this is better:* If you press `Ctrl+C` in this session, it only kills your isolated script. The main container stays healthy and running.
+
+**Option 2: Live Console Attachment (Dangerous)**
+To plug your terminal directly into the primary process (PID 1) that has been running since the pod booted, use `attach`:
 ```bash
 kubectl attach -it deployment/ai-agent -n ai-agent
 ```
-*Note: To disconnect from the pod without killing it, press `Ctrl+P` followed by `Ctrl+Q`. If you press `Ctrl+C`, you will kill the Python process and Kubernetes will restart the pod.*
+*Warning:* If you press `Ctrl+C` while attached, you will send a kill signal directly to the master process. This will crash the entire container, forcing Kubernetes to reboot the pod from scratch. To disconnect safely, press `Ctrl+P` followed by `Ctrl+Q`.
 
 ## 🚨 Troubleshooting & Security Solutions
 
