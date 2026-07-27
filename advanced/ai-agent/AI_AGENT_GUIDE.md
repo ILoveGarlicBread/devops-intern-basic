@@ -44,3 +44,17 @@ To add new capabilities to the agent (for example, allowing it to query Fineract
 2.  Define a new Python function (e.g., `def query_database(query: str):`).
 3.  Add the function name to the `tools=[get_weather, query_database]` list when initializing the `Agent`.
 4.  Commit the change. CodeBuild will build the new image, and ArgoCD will roll out the updated pod!
+
+## 🚨 Troubleshooting & Security Solutions
+
+### 1. ECR Token Expiration (`ImagePullBackOff`)
+**Problem:** AWS ECR passwords expire strictly every 12 hours. If ArgoCD attempts to deploy a new pod after 12 hours, Kubernetes gets an `Unauthorized` error and the pod gets stuck in `ImagePullBackOff`.
+**Solution:** We automated the token rotation via a native Kubernetes `CronJob` (`ecr-cronjob.yaml`).
+*   **Infrastructure:** Terraform attaches the `AmazonEC2ContainerRegistryReadOnly` IAM policy to the `rke2-worker-route53-role` EC2 instance profile.
+*   **Automation:** The CronJob runs every 8 hours, assumes the EC2 node's IAM role, runs `aws ecr get-login-password`, and natively patches the `ecr-registry-secret` Kubernetes secret inside the `ai-agent` namespace.
+
+### 2. Bedrock "Operation Not Allowed" (AWS Marketplace Fraud Lock)
+**Problem:** Newly created AWS accounts or accounts with Virtual Credit Cards often trigger a silent anti-fraud restriction blocking access to 3rd-party foundation models (like Anthropic Claude) via the AWS Marketplace. The pod will instantly crash during LiteLLM's startup health check.
+**Solution:** 
+*   **Temporary Workaround:** We proved the agent can successfully bypass this by using a first-party model (`google.gemma-3-4b-it`) routed through the **Bedrock Mantle endpoint**, which does not trigger the strict 3rd-party marketplace SCP lock.
+*   **Permanent Fix:** Update the AWS Billing console with a valid, physical credit card, and explicitly request a human AWS Support agent to manually review and lift the Service Control Policy restricting the account.
