@@ -19,7 +19,7 @@ data:
         return f"The weather in {location} is 72 degrees and sunny."
     
     if __name__ == "__main__":
-        print("Connecting natively to AWS Bedrock Mantle Endpoint...")
+        print("Connecting natively to OpenAI...")
         client = AsyncOpenAI(
             api_key=os.environ.get("OPENAI_API_KEY")
         )
