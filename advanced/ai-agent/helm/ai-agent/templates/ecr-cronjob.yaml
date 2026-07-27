@@ -1,0 +1,72 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ecr-secret-updater
+  namespace: {{ .Release.Namespace }}
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  resourceNames: ["ecr-registry-secret"]
+  verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ecr-secret-updater-binding
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ecr-secret-updater
+subjects:
+- kind: ServiceAccount
+  name: ecr-secret-updater
+  namespace: {{ .Release.Namespace }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ecr-secret-updater
+  namespace: {{ .Release.Namespace }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ecr-token-refresh
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: "0 */8 * * *" # Run every 8 hours
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: ecr-secret-updater
+          restartPolicy: OnFailure
+          containers:
+          - name: aws-cli
+            image: amazon/aws-cli:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Fetching new ECR token..."
+              TOKEN=$(aws ecr get-login-password --region ap-south-1)
+              AUTH=$(echo -n "AWS:${TOKEN}" | base64 -w0)
+              DOCKER_JSON="{\"auths\":{\"205714230466.dkr.ecr.ap-south-1.amazonaws.com\":{\"auth\":\"$AUTH\"}}}"
+              DOCKER_B64=$(echo -n $DOCKER_JSON | base64 -w0)
+              
+              cat <<EOF > patch.json
+              {"data": {".dockerconfigjson": "$DOCKER_B64"}}
+              EOF
+              
+              echo "Patching secret..."
+              curl -k -s -o /dev/null -w "%{http_code}" -X PATCH \
+                -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
+                -H "Accept: application/json" \
+                -H "Content-Type: application/strategic-merge-patch+json" \
+                --data @patch.json \
+                https://kubernetes.default.svc/api/v1/namespaces/{{ .Release.Namespace }}/secrets/ecr-registry-secret
+              
+              echo -e "\nECR token updated successfully!"
