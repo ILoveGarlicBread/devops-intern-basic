@@ -32,6 +32,14 @@ data:
             - ".*Grafana.*"
           no_follow_redirects: false
 
+      http_argocd:
+        prober: http
+        timeout: 5s
+        http:
+          valid_status_codes: [200, 301, 302]
+          fail_if_body_not_matches_regexp:
+            - ".*Argo CD.*"
+          no_follow_redirects: false
 #      http_kibana:
 #        prober: http
 #        timeout: 5s
@@ -163,3 +171,22 @@ spec:
     staticConfig:
       static:
         - https://github.com/
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: argocd-probe
+  namespace: monitoring
+  labels:
+    release: prometheus-stack
+spec:
+  jobName: blackbox-exporter
+  interval: 60s
+  module: http_argocd
+  prober:
+    url: blackbox-exporter.monitoring.svc.cluster.local:9115
+  targets:
+    staticConfig:
+      static:
+        - https://argocd.lblam.tma-demos.shop
