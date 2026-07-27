@@ -1,0 +1,15 @@
+jenkins:
+  controller:
+    installPlugins:
+      - kubernetes:latest
+      - workflow-aggregator:latest
+      - git:latest
+      - configuration-as-code:latest
+      - docker-workflow:latest
+    ingress:
+      enabled: true
+      hostName: jenkins.lblam.tma-demos.shop
+  persistence:
+    enabled: true
+    storageClass: longhorn
+    size: "15Gi"
