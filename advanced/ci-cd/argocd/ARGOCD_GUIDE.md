@@ -63,7 +63,16 @@ To hand over your existing Fineract stack to ArgoCD:
 *   **Path**: `advanced/fineract`
 *   **Status**: Created. **Requires Git Repository Credentials in ArgoCD to perform initial sync.** Auto-sync is currently turned **OFF** to safely perform brownfield adoption of the existing Fineract stack.
 
-### B. AI Agent Application (Upcoming)
-*   **Repo**: `ai-agent` (CodeCommit)
-*   **Description**: A simple OpenAI Agent SDK (routed to AWS Bedrock Anthropic Claude 3 Haiku) deployed via Helm chart.
-*   **Status**: Pending creation of repo, CI/CD pipeline, and Helm chart.
+### B. AI Agent Application
+*   **Repo**: `https://git-codecommit.ap-south-1.amazonaws.com/v1/repos/TMA-DevOps-Lam-Internship`
+*   **Path**: `advanced/ai-agent/helm/ai-agent`
+*   **Status**: Deployed. Agent successfully authenticates with OpenAI API natively.
+
+## 6. Troubleshooting & Operational Solutions
+
+### A. Sync Lag (The 3-Minute Window)
+**Problem:** ArgoCD polls the Git repository every 3 minutes by default (unless webhooks are configured). If you push a code change to Git and immediately delete a crashing pod to force a restart, Kubernetes may spawn a new pod *before* ArgoCD has applied the new Git state. This causes the pod to crash again using the old configuration.
+**Solution:** Force ArgoCD to bypass the 3-minute timer and pull the latest Git commit instantly using a "Hard Refresh":
+```bash
+kubectl patch application <app-name> -n argocd --type merge -p '{"metadata": {"annotations": {"argocd.argoproj.io/refresh": "hard"}}}'
+```
