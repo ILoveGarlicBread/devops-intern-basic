@@ -27,10 +27,22 @@ Instead, we used an **Umbrella Chart** managed by **ArgoCD**:
 *   **Peer Review:** If a developer wants to add a new Jenkins plugin, they can't run `helm upgrade`. They must open a Git Pull Request to edit `values.yaml`.
 *   **No Drift:** If someone manually modifies the Jenkins cluster, ArgoCD instantly detects the drift and rewrites the cluster to match Git.
 
-## 3. Jenkins Plugin Resolution Issue
-During our initial deployment, the Jenkins `init` container got stuck in a `CrashLoopBackOff`. 
+## 3. Jenkins Crash Troubleshooting Log
+During our initial deployment, the Jenkins `init` container and main container got stuck in multiple `CrashLoopBackOff` states. Here is a log of the deep compatibility issues we resolved:
+
+### A. The Plugin 404 Error
 *   **The Mistake:** We appended `:latest` to the plugins in our `values.yaml` (e.g., `kubernetes:latest`).
-*   **The Fix:** The Jenkins CLI does not support the `:latest` tag. It requires either the exact version hash (e.g. `kubernetes:4267.v339fb...`) or the name *without any version* (e.g., `kubernetes`), which tells Jenkins to dynamically resolve the latest version.
+*   **The Fix:** The Jenkins CLI does not support the `:latest` tag. It requires either the exact version hash or the name *without any version* (e.g., `kubernetes`), which tells Jenkins to dynamically resolve the latest version.
+
+### B. The Version Compatibility Exception (Init:Error)
+*   **The Error:** `workflow-api requires a greater version of Jenkins (2.504.1) than 2.452.3`
+*   **The Cause:** Because we removed the plugin tags (Fix A), Jenkins downloaded the absolute newest plugins. However, the Helm Chart defaults to spawning an older Jenkins core version (`2.452.3`). The new plugins threw a `VersionCompatibilityException` because the core was too old.
+*   **The Fix:** We hardcoded `jenkins.controller.image.tag` to `latest-jdk17` in `values.yaml` to force the use of the newest Jenkins core.
+
+### C. Configuration As Code (JCasC) Boot Failure
+*   **The Error:** `io.jenkins.plugins.casc.UnknownAttributesException: Invalid configuration elements for type: class hudson.security.csrf.DefaultCrumbIssuer : excludeClientIPFromCrumb.`
+*   **The Cause:** After successfully downloading plugins on `latest-jdk17`, the main Jenkins container immediately crashed. The older Helm Chart was injecting an obsolete CSRF configuration parameter (`excludeClientIPFromCrumb`) that the newest Jenkins version had completely removed from its Java codebase.
+*   **The Fix:** We added `csrf.defaultCrumbIssuer.enabled: false` to `values.yaml` to completely prevent the Helm chart from generating that obsolete JCasC block. (New Jenkins versions have CSRF protection hardcoded permanently ON anyway, so we don't need JCasC to configure it).
 
 ## 4. Useful Commands
 
@@ -43,4 +55,10 @@ kubectl get pods -n jenkins -w
 Once the pod is fully running, run this to get the initial login password:
 ```bash
 kubectl get secret jenkins -n jenkins -o jsonpath="{.data.jenkins-admin-password}" | base64 --decode && echo
+```
+
+**Port-Forward Jenkins UI to your local machine (Port 8200):**
+If you aren't using the Route53 Ingress, you can port-forward the UI locally:
+```bash
+kubectl port-forward svc/jenkins -n jenkins 8200:8080 &
 ```
