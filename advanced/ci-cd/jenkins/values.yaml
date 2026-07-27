@@ -1,11 +1,11 @@
 jenkins:
   controller:
     installPlugins:
-      - kubernetes:latest
-      - workflow-aggregator:latest
-      - git:latest
-      - configuration-as-code:latest
-      - docker-workflow:latest
+      - kubernetes
+      - workflow-aggregator
+      - git
+      - configuration-as-code
+      - docker-workflow
     ingress:
       enabled: true
       hostName: jenkins.lblam.tma-demos.shop
