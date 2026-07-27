@@ -7,12 +7,11 @@ metadata:
 data:
   main.py: |-
     import os
-    os.environ["OPENAI_BASE_URL"] = "http://localhost:4000"
-    os.environ["OPENAI_API_KEY"] = "sk-dummy-key"
     import time
     from openai import AsyncOpenAI
     from agents import Agent, Runner, function_tool
     from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
+    from aws_bedrock_token_generator import provide_token
     
     @function_tool
     def get_weather(location: str):
@@ -20,17 +19,17 @@ data:
         return f"The weather in {location} is 72 degrees and sunny."
     
     if __name__ == "__main__":
-        print("Connecting to AWS Bedrock via LiteLLM...")
+        print("Connecting natively to AWS Bedrock Mantle Endpoint...")
         client = AsyncOpenAI(
-            base_url="http://localhost:4000/v1",
-            api_key="sk-litellm-proxy-key"
+            base_url="https://bedrock-mantle.ap-south-1.api.aws/v1",
+            api_key=provide_token()
         )
         my_agent = Agent(
             name="BedrockAssistant",
-            instructions="You are a helpful assistant powered by AWS Bedrock (Claude 3 Haiku).",
+            instructions="You are a helpful assistant powered by AWS Bedrock (Google Gemma).",
             tools=[get_weather],
             model=OpenAIChatCompletionsModel(
-                model="bedrock/google.gemma-3-4b-it", 
+                model="google.gemma-3-4b-it", 
                 openai_client=client
             )
         )
