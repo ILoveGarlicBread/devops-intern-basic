@@ -7,6 +7,8 @@ metadata:
 data:
   main.py: |-
     import os
+    os.environ["OPENAI_BASE_URL"] = "http://localhost:4000"
+    os.environ["OPENAI_API_KEY"] = "sk-dummy-key"
     import time
     from openai import AsyncOpenAI
     from agents import Agent, Runner, function_tool
