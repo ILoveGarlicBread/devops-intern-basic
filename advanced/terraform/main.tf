@@ -205,9 +205,9 @@ resource "aws_route53_record" "fineract_subdomain" {
 # --- WORKER NODES (HETEROGENEOUS SPOT CLUSTER) ---
 locals {
   worker_config = {
-    "1" = { name = "Fineract-Core", type = "t3.large", workload = "fineract" },
-    "2" = { name = "App-Stack",     type = "t3.large", workload = "apps" },
-    "3" = { name = "Messaging-Ops", type = "t3.large", workload = "messaging" }
+    "1" = { name = "Fineract-Core", type = "t3.large", workload = "fineract", spot = false },
+    "2" = { name = "App-Stack",     type = "t3.large", workload = "apps", spot = false },
+    "3" = { name = "Messaging-Ops", type = "t3.large", workload = "messaging", spot = true }
   }
 }
 
@@ -225,14 +225,17 @@ resource "aws_instance" "k8s_worker" {
     delete_on_termination = true
   }
 
-  # Removed Spot options to run as On-Demand (within $88 budget)
-  # instance_market_options {
-  #   market_type = "spot"
-  #   spot_options {
-  #     instance_interruption_behavior = "stop"
-  #     spot_instance_type             = "persistent"
-  #   }
-  # }
+  # Conditionally use spot instances based on worker config to bypass on-demand vCPU limits
+  dynamic "instance_market_options" {
+    for_each = each.value.spot ? [1] : []
+    content {
+      market_type = "spot"
+      spot_options {
+        instance_interruption_behavior = "stop"
+        spot_instance_type             = "persistent"
+      }
+    }
+  }
 
   user_data = <<-EOF
               #!/bin/bash
@@ -644,3 +647,11 @@ resource "aws_iam_role_policy_attachment" "worker_bedrock_attach" {
   policy_arn = aws_iam_policy.worker_bedrock_policy.arn
 }
 
+
+resource "aws_route53_record" "argocd_cname" {
+  zone_id = data.aws_route53_zone.primary.zone_id
+  name    = "argocd.lblam.tma-demos.shop"
+  type    = "CNAME"
+  ttl     = 300
+  records = ["fineract.lblam.tma-demos.shop"]
+}

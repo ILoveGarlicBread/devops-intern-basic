@@ -38,8 +38,13 @@ spec:
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- if .Values.env }}
           env:
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openai-secret
+                  key: OPENAI_API_KEY
+          {{- if .Values.env }}
             {{- toYaml .Values.env | nindent 12 }}
           {{- end }}
           volumeMounts:

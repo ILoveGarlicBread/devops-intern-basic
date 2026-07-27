@@ -1,0 +1,232 @@
+---
+# Source: ai-agent/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ai-agent
+  labels:
+    helm.sh/chart: ai-agent-0.1.0
+    app.kubernetes.io/name: ai-agent
+    app.kubernetes.io/instance: ai-agent
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+automountServiceAccountToken:
+---
+# Source: ai-agent/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-agent-config
+  labels:
+    helm.sh/chart: ai-agent-0.1.0
+    app.kubernetes.io/name: ai-agent
+    app.kubernetes.io/instance: ai-agent
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+data:
+  main.py: |-
+    import os
+    os.environ["OPENAI_BASE_URL"] = "http://localhost:4000"
+    os.environ["OPENAI_API_KEY"] = "dummy-key"
+    os.environ["LITELLM_MASTER_KEY"] = "dummy-key"
+    
+    import time
+    import threading
+    import subprocess
+    from openai import AsyncOpenAI
+    from agents import Agent, Runner, function_tool
+    from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
+    
+    def start_litellm_proxy():
+        print("Starting LiteLLM proxy for AWS Bedrock...")
+        # Start LiteLLM proxy pointing to Bedrock Haiku model
+        # Requires AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION in env
+        cmd = [
+            "litellm",
+            "--model", "bedrock/anthropic.claude-3-haiku-20240307-v1:0",
+            "--port", "4000",
+    
+        ]
+        import sys
+        import urllib.request
+        proxy = subprocess.Popen(cmd, stdout=sys.stdout, stderr=sys.stderr)
+        
+        print("Waiting for proxy to become ready...")
+        for _ in range(30):
+            try:
+                urllib.request.urlopen("http://localhost:4000/health", timeout=1)
+                break
+            except Exception:
+                time.sleep(1)
+                
+        return proxy
+    
+    @function_tool
+    def get_weather(location: str):
+        """Get the current weather in a given location."""
+        # Dummy tool for the quickstart
+        return f"The weather in {location} is 72 degrees and sunny."
+    
+    if __name__ == "__main__":
+        proxy = start_litellm_proxy()
+        
+        try:
+            
+            client = AsyncOpenAI(base_url="http://localhost:4000", api_key="dummy-key")
+            my_agent = Agent(
+                name="BedrockAssistant",
+                instructions="You are a helpful assistant powered by AWS Bedrock (Claude 3 Haiku).",
+                tools=[get_weather],
+                model=OpenAIChatCompletionsModel(
+                    model="bedrock/anthropic.claude-3-haiku-20240307-v1:0", 
+                    openai_client=client
+                )
+            )
+    
+            print("Agent is ready! (Type 'exit' to quit)")
+            runner = Runner()
+            
+            while True:
+                user_input = input("User: ")
+                if user_input.lower() in ['exit', 'quit']:
+                    break
+                
+                response = runner.run_sync(starting_agent=my_agent, input=user_input)
+                print(f"Agent: {response.final_output}")
+                
+        finally:
+            print("Shutting down proxy...")
+            proxy.terminate()
+---
+# Source: ai-agent/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-agent
+  labels:
+    helm.sh/chart: ai-agent-0.1.0
+    app.kubernetes.io/name: ai-agent
+    app.kubernetes.io/instance: ai-agent
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: ai-agent
+    app.kubernetes.io/instance: ai-agent
+---
+# Source: ai-agent/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-agent
+  labels:
+    helm.sh/chart: ai-agent-0.1.0
+    app.kubernetes.io/name: ai-agent
+    app.kubernetes.io/instance: ai-agent
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ai-agent
+      app.kubernetes.io/instance: ai-agent
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: ai-agent-0.1.0
+        app.kubernetes.io/name: ai-agent
+        app.kubernetes.io/instance: ai-agent
+        app.kubernetes.io/version: "1.16.0"
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      imagePullSecrets:
+        - name: ecr-registry-secret
+      serviceAccountName: ai-agent
+      containers:
+        - name: ai-agent
+          env:
+            - name: AWS_REGION
+              value: us-east-1
+          envFrom:
+            - secretRef:
+                name: ai-agent-aws-creds
+          stdin: true
+          tty: true
+          image: "205714230466.dkr.ecr.ap-south-1.amazonaws.com/ai-agent:latest"
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          resources:
+            limits:
+              cpu: 500m
+              memory: 1Gi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          volumeMounts:
+            - mountPath: /app/main.py
+              name: main-py-script
+              subPath: main.py
+      volumes:
+        - configMap:
+            name: ai-agent-config
+          name: main-py-script
+---
+# Source: ai-agent/templates/external-secret.yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: ai-agent-aws-creds
+  labels:
+    helm.sh/chart: ai-agent-0.1.0
+    app.kubernetes.io/name: ai-agent
+    app.kubernetes.io/instance: ai-agent
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: production-vault
+  target:
+    name: ai-agent-aws-creds
+    creationPolicy: Owner
+  data:
+    - secretKey: AWS_ACCESS_KEY_ID
+      remoteRef:
+        key: s3-backup-keys
+        property: accessKey
+    - secretKey: AWS_SECRET_ACCESS_KEY
+      remoteRef:
+        key: s3-backup-keys
+        property: secretKey
+---
+# Source: ai-agent/templates/tests/test-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "ai-agent-test-connection"
+  labels:
+    helm.sh/chart: ai-agent-0.1.0
+    app.kubernetes.io/name: ai-agent
+    app.kubernetes.io/instance: ai-agent
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['ai-agent:80']
+  restartPolicy: Never
