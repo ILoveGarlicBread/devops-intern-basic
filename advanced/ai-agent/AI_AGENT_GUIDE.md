@@ -45,6 +45,17 @@ To add new capabilities to the agent (for example, allowing it to query Fineract
 3.  Add the function name to the `tools=[get_weather, query_database]` list when initializing the `Agent`.
 4.  Commit the change. CodeBuild will build the new image, and ArgoCD will roll out the updated pod!
 
+## 🎮 How to Interact with the Agent
+Because the AI Agent runs as a continuous loop waiting for user input (`input("User: ")`), the Kubernetes Deployment is configured with `stdin: true` and `tty: true`. 
+
+To talk to the agent live in the cluster, you must attach your terminal to the running container's standard input.
+
+**Run this command to attach to the pod:**
+```bash
+kubectl attach -it deployment/ai-agent -n ai-agent
+```
+*Note: To disconnect from the pod without killing it, press `Ctrl+P` followed by `Ctrl+Q`. If you press `Ctrl+C`, you will kill the Python process and Kubernetes will restart the pod.*
+
 ## 🚨 Troubleshooting & Security Solutions
 
 ### 1. ECR Token Expiration (`ImagePullBackOff`)
