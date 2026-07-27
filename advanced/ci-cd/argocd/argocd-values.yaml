@@ -17,10 +17,12 @@ server:
     annotations:
       # Force SSL redirect
       nginx.ingress.kubernetes.io/ssl-redirect: "true"
-      # Required for ArgoCD's gRPC UI connections
-      nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-    hosts:
-      - argocd.lblam.tma-demos.shop
+      # Required for ArgoCD's gRPC UI connections with --insecure
+      nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+      # Enable automatic TLS provisioning
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    # -- Argo CD server hostname
+    hostname: argocd.lblam.tma-demos.shop
     tls:
       - hosts:
           - argocd.lblam.tma-demos.shop
