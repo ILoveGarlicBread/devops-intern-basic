@@ -1,5 +1,7 @@
 jenkins:
   controller:
+    image:
+      tag: "latest-jdk17"
     installPlugins:
       - kubernetes
       - workflow-aggregator
