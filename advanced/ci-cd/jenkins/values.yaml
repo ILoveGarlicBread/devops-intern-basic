@@ -1,5 +1,9 @@
 jenkins:
   controller:
+    csrf:
+      defaultCrumbIssuer:
+        enabled: true
+        proxyCompatability: false
     image:
       tag: "latest-jdk17"
     installPlugins:
