@@ -1,78 +1,79 @@
 pipeline {
-    agent any
+    agent {
+        kubernetes {
+            yaml '''
+            apiVersion: v1
+            kind: Pod
+            spec:
+              containers:
+              - name: kaniko
+                image: gcr.io/kaniko-project/executor:debug
+                command: ["/busybox/sh", "-c"]
+                args: ["cat"]
+                tty: true
+            '''
+        }
+    }
     
     environment {
-        // AWS ECR Configuration
         AWS_REGION     = 'ap-south-1'
         ECR_REGISTRY   = '205714230466.dkr.ecr.ap-south-1.amazonaws.com'
         REPO_NAME      = 'ai-agent'
-        
-        // Generate a unique tag based on the Git commit hash
         IMAGE_TAG      = "${GIT_COMMIT.take(7)}"
-        
-        // Git configuration for the automated commit
         GIT_REPO_URL   = 'ssh://git-codecommit.ap-south-1.amazonaws.com/v1/repos/TMA-DevOps-Lam-Internship'
         HELM_VALUES    = 'advanced/ai-agent/helm/ai-agent/values.yaml'
     }
 
     stages {
-        stage('Build Docker Image') {
+        stage('Build & Push to ECR (Kaniko)') {
             steps {
-                dir('advanced/ai-agent/app') {
-                    script {
-                        echo "Building image ${ECR_REGISTRY}/${REPO_NAME}:${IMAGE_TAG}..."
-                        sh "docker build -t ${ECR_REGISTRY}/${REPO_NAME}:${IMAGE_TAG} ."
+                // Use the Kaniko container for a Dockerless build!
+                container('kaniko') {
+                    dir('advanced/ai-agent/app') {
+                        script {
+                            echo "Building and pushing image to ${ECR_REGISTRY}/${REPO_NAME}:${IMAGE_TAG}..."
+                            sh """
+                            /kaniko/executor \\
+                              --context `pwd` \\
+                              --dockerfile `pwd`/Dockerfile \\
+                              --destination ${ECR_REGISTRY}/${REPO_NAME}:${IMAGE_TAG} \\
+                              --destination ${ECR_REGISTRY}/${REPO_NAME}:latest
+                            """
+                        }
                     }
-                }
-            }
-        }
-
-        stage('Push to AWS ECR') {
-            steps {
-                script {
-                    // Authenticate Jenkins with AWS ECR
-                    // This requires Jenkins to have an IAM Role or AWS Credentials configured
-                    sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
-                    
-                    // Push the newly built image
-                    sh "docker push ${ECR_REGISTRY}/${REPO_NAME}:${IMAGE_TAG}"
                 }
             }
         }
 
         stage('Update Helm Chart (GitOps)') {
             steps {
-                script {
-                    // Update the image tag in the values.yaml file using sed
-                    sh """
-                    sed -i "s/tag: .*/tag: \\"${IMAGE_TAG}\\"/" ${HELM_VALUES}
-                    """
-                    
-                    // Commit and push the changes back to Git for ArgoCD to detect
-                    withCredentials([sshUserPrivateKey(credentialsId: 'codecommit-ssh', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USERNAME')]) {
+                // Switch back to the default Jenkins container which has git installed
+                container('jnlp') {
+                    script {
+                        // Update the image tag in the values.yaml file using sed
                         sh """
-                        git config user.name "Jenkins CI"
-                        git config user.email "jenkins@tma-demos.shop"
-                        
-                        # Set up Git to use the injected SSH key
-                        export GIT_SSH_COMMAND="ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no"
-                        
-                        git add ${HELM_VALUES}
-                        git commit -m "ci(ai-agent): bump image tag to ${IMAGE_TAG} [skip ci]"
-                        
-                        # Push using SSH
-                        git push ${GIT_REPO_URL} HEAD:main
+                        sed -i "s/tag: .*/tag: \\"${IMAGE_TAG}\\"/" ${HELM_VALUES}
                         """
+                        
+                        // Commit and push the changes back to Git for ArgoCD to detect
+                        withCredentials([sshUserPrivateKey(credentialsId: 'codecommit-ssh', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USERNAME')]) {
+                            sh """
+                            git config user.name "Jenkins CI"
+                            git config user.email "jenkins@tma-demos.shop"
+                            
+                            # Set up Git to use the injected SSH key
+                            export GIT_SSH_COMMAND="ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no"
+                            
+                            git add ${HELM_VALUES}
+                            git commit -m "ci(ai-agent): bump image tag to ${IMAGE_TAG} [skip ci]"
+                            
+                            # Push using SSH
+                            git push ${GIT_REPO_URL} HEAD:main
+                            """
+                        }
                     }
                 }
             }
-        }
-    }
-    
-    post {
-        always {
-            // Clean up the local docker image to save disk space on the Jenkins worker
-            sh "docker rmi ${ECR_REGISTRY}/${REPO_NAME}:${IMAGE_TAG} || true"
         }
     }
 }
