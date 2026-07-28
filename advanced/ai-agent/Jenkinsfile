@@ -61,8 +61,8 @@ pipeline {
                             git config user.name "Jenkins CI"
                             git config user.email "jenkins@tma-demos.shop"
                             
-                            # Set up Git to use the injected SSH key
-                            export GIT_SSH_COMMAND="ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no"
+                            # Set up Git to use the injected SSH key AND the AWS Key ID username
+                            export GIT_SSH_COMMAND="ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no -o User=\${SSH_USERNAME}"
                             
                             git add ${HELM_VALUES}
                             git commit -m "ci(ai-agent): bump image tag to ${IMAGE_TAG} [skip ci]"
