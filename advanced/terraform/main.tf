@@ -186,10 +186,10 @@ resource "aws_route53_record" "logging_subdomain" {
 
 resource "aws_route53_record" "monitoring_subdomain" {
   zone_id = data.aws_route53_zone.primary.zone_id
-  name    = "monitoring.lblam.tma-demos.shop."
-  type    = "A"
-  ttl     = 60
-  records = [aws_instance.k8s_worker["2"].public_ip]
+  name    = "monitoring.lblam.tma-demos.shop"
+  type    = "CNAME"
+  ttl     = 300
+  records = ["fineract.lblam.tma-demos.shop"]
 }
 
 # Fineract DNS record
@@ -249,8 +249,6 @@ resource "aws_instance" "k8s_worker" {
                 DOMAIN="fineract.lblam.tma-demos.shop"
               elif [ "$WORKLOAD" = "apps" ]; then
                 DOMAIN="logging.lblam.tma-demos.shop"
-              elif [ "$WORKLOAD" = "messaging" ]; then
-                DOMAIN="monitoring.lblam.tma-demos.shop"
               else
                 DOMAIN=""
               fi
