@@ -47,12 +47,6 @@ spec:
           {{- if .Values.env }}
             {{- toYaml .Values.env | nindent 12 }}
           {{- end }}
-          volumeMounts:
-          - name: litellm-config-vol
-            mountPath: /app/config.yaml
-            subPath: config.yaml
-          command: ["/bin/bash", "-c"]
-          args: ["pip install prisma aws-bedrock-token-generator && python main.py"]
           stdin: true
           tty: true
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"

@@ -52,20 +52,8 @@ affinity: {}
 nodeSelector: {}
 tolerations: []
 podLabels: {}
-volumeMounts:
-  - name: main-py-script
-    mountPath: /app/main.py
-    subPath: main.py
-  - name: litellm-config-vol
-    mountPath: /app/litellm_config.yaml
-    subPath: config.yaml
+volumeMounts: []
 
-volumes:
-  - name: main-py-script
-    configMap:
-      name: ai-agent-config
-  - name: litellm-config-vol
-    configMap:
-      name: litellm-config
+volumes: []
 livenessProbe: {}
 readinessProbe: {}
