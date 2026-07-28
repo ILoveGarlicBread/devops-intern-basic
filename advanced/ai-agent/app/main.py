@@ -10,6 +10,7 @@ def get_weather(location: str):
     return f"The weather in {location} is 72 degrees and sunny."
 
 if __name__ == "__main__":
+    print("Test CICD")
     print("Connecting natively to OpenAI...")
     
     # Securely pulling the API key injected by External Secrets Operator
