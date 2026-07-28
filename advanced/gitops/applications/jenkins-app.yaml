@@ -7,10 +7,16 @@ metadata:
   - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  source:
-    repoURL: 'ssh://APKAS7ZMGBTBFHE4AQG3@git-codecommit.ap-south-1.amazonaws.com/v1/repos/TMA-DevOps-Lam-Internship'
-    path: advanced/ci-cd/jenkins
-    targetRevision: main
+  sources:
+    - repoURL: 'https://charts.jenkins.io'
+      chart: jenkins
+      targetRevision: 5.3.6
+      helm:
+        valueFiles:
+        - $values/advanced/gitops/helm-values/ci-cd/jenkins-values.yaml
+    - repoURL: 'ssh://APKAS7ZMGBTBFHE4AQG3@git-codecommit.ap-south-1.amazonaws.com/v1/repos/TMA-DevOps-Lam-Internship'
+      targetRevision: main
+      ref: values
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: jenkins
