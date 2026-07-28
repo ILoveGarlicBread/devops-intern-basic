@@ -38,6 +38,7 @@ server:
               region     = "ap-south-1"
               kms_key_id = "ad9aeabc-b516-4b28-9486-4e8ce7c955e6"
         }
+        service_registration "kubernetes" {}
 
 injector:
   enabled: false
