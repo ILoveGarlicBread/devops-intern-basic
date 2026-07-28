@@ -8,8 +8,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'ssh://APKAS7ZMGBTBFHE4AQG3@git-codecommit.ap-south-1.amazonaws.com/v1/repos/TMA-DevOps-Lam-Internship'
-    path: advanced/ai-agent/helm/ai-agent
+    repoURL: 'ssh://APKAS7ZMGBTBFHE4AQG3@git-codecommit.ap-south-1.amazonaws.com/v1/repos/ai-agent-manifests'
+    path: ai-agent
     targetRevision: main
   destination:
     server: 'https://kubernetes.default.svc'
