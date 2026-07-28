@@ -15,6 +15,11 @@ pipeline {
         }
     }
     
+    triggers {
+        // Poll AWS CodeCommit for changes every minute
+        pollSCM('* * * * *')
+    }
+    
     environment {
         AWS_REGION     = 'ap-south-1'
         ECR_REGISTRY   = '205714230466.dkr.ecr.ap-south-1.amazonaws.com'
