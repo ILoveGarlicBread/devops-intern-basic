@@ -1,5 +1,5 @@
 # ⚠️ TEMPORARY CONTEXT FOR NEXT AGENT SESSION (July 2026) ⚠️
-*The user is currently waiting for AWS spot instance worker nodes to come back online.*
+*Worker nodes have stabilized after a Spot Instance rotation. Storage detach errors were resolved.*
 
 **Current State & Next Steps for the AI:**
 1. **Nginx Ingress CVE Patching:** Custom image built and loaded to master node. Needs to be distributed to worker nodes (SCP or registry) once they stabilize.
@@ -72,6 +72,11 @@ This project manages a Kubernetes environment for Apache Fineract on AWS Spot In
 - **CodeBuild Pivot & Jenkins GitOps Deployment (July 2026):** Attempted to build the AI Agent Docker image using AWS CodeBuild, but was blocked by a hard `0.0` concurrent build Service Quota (another anti-fraud lock). While AWS Support approved an increase for the `Linux Lambda/4GB` environment, discovered that Lambda CodeBuild environments fundamentally do not support Privileged Mode (required for `docker build`). Pivoted to deploying Jenkins natively in the cluster. Used an "Umbrella Chart" (`Chart.yaml` dependencies) to manage Jenkins via ArgoCD. Resolved a `VersionCompatibilityException` in the Jenkins `init` container by upgrading the Jenkins controller image tag to `latest-jdk17` to satisfy the minimum requirements of the newest plugins.
 - **Dockerless Kubernetes CI/CD via Kaniko (July 2026):** Replaced standard `docker build` within the Jenkins pipeline with a Google Kaniko sidecar to securely build images inside the RKE2 containerd environment without requiring root access or a Docker daemon. Configured Kaniko to dynamically inherit the EC2 worker node's IAM profile (`rke2-worker-route53-role` + `AmazonEC2ContainerRegistryPowerUser`) to securely push to AWS ECR without using static AWS credentials.
 - **GitOps SSH Authentication Fixes (July 2026):** Resolved Jenkins SSH `git push` failures to AWS CodeCommit by explicitly setting `export GIT_SSH_COMMAND="ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no -o User=\${SSH_USERNAME}"`, forcing Git to authenticate using the AWS IAM Key ID instead of the default container username.
+- **Spot Instance Multi-Attach Recovery (July 2026):** Successfully diagnosed and recovered from Longhorn PVC Multi-Attach errors on `vault-1` and `loki-write-1` following an AWS Spot instance rotation. Removed stale pods and PVCs, relying on Raft consensus (Vault) and stateless design (Loki WAL) to automatically provision fresh PVCs without data loss.
+- **RKE2 Nginx Ingress Metrics (July 2026):** Enabled missing Nginx Ingress metrics by creating a custom `HelmChartConfig` for the native `rke2-ingress-nginx` controller, configuring it to automatically generate a ServiceMonitor with the `release: prometheus-stack` label to feed data into Grafana dashboards.
+- **DNS Architecture Optimization (July 2026):** Refactored Route53 DNS management by converting `monitoring.lblam.tma-demos.shop` from an independently managed A record into a CNAME pointing to `fineract.lblam.tma-demos.shop`, eliminating redundant dynamic DNS bash scripts inside Terraform worker node definitions. Also added a CNAME for Jenkins.
+- **Jenkins Ingress TLS (July 2026):** Configured the Jenkins Helm chart to automatically utilize the existing `letsencrypt-prod` Cert-Manager ClusterIssuer to dynamically provision TLS certificates for the Jenkins UI.
+- **GitOps Codebase Consolidation (July 2026):** Reorganized the GitOps folder structure by combining `argocd-values.yaml` and `jenkins-values.yaml` into a unified `ci-cd` directory, streamlining application value paths.
 
 ## 4. Future Security Roadmap
 - [ ] **Network Policies (Micro-segmentation):** Implement default-deny rules across all namespaces.

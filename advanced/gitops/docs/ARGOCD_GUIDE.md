@@ -33,7 +33,7 @@ Install ArgoCD into the `argocd` namespace using our custom values:
 helm install argocd argo/argo-cd \
   --namespace argocd \
   --create-namespace \
-  -f helm_values/ci-cd/argocd-values.yaml
+  -f advanced/gitops/helm-values/ci-cd/argocd-values.yaml
 ```
 
 ### C. Retrieve Initial Admin Password

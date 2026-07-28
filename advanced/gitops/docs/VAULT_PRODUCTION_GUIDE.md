@@ -125,3 +125,26 @@ EOF
 ```
 
 You can now port-forward `kubectl port-forward svc/vault-ui 8200:8200 -n vault` to access the UI, add your real passwords, and update your `ExternalSecret` manifests to point to `production-vault`!
+
+---
+
+## Troubleshooting: Spot Instance PVC Multi-Attach Errors
+
+Because this cluster runs on AWS Spot Instances, a worker node may be unexpectedly rotated by AWS. If this happens while a distributed application (like Vault or Loki) is running, you may see a pod indefinitely stuck in `ContainerCreating`.
+
+Running `kubectl describe pod vault-1 -n vault` might reveal:
+`Warning  FailedAttachVolume  Multi-Attach error for volume "pvc-..." Volume is already exclusively attached to one node and can't be attached to another`
+
+### The Fix
+This happens because Longhorn's `attachdetach-controller` still thinks the volume is attached to the old (dead) node. Since Vault uses **Raft consensus**, the active leader (`vault-0`) already holds all the data safely. You can recover this by completely deleting the stale volume and letting the `StatefulSet` provision a new one:
+
+```bash
+# 1. Delete the stuck pod
+kubectl delete pod vault-1 -n vault --force
+
+# 2. Force delete the stale PVC
+kubectl delete pvc data-vault-1 -n vault
+
+# 3. Wait for the StatefulSet to provision a fresh volume and reboot the pod
+```
+The new pod will boot up with a blank disk, automatically reconnect to the Raft leader via internal networking, and instantly replicate the entire cluster database!
