@@ -13,6 +13,13 @@ controller:
   ingress:
     enabled: true
     hostName: jenkins.lblam.tma-demos.shop
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    tls:
+      - secretName: jenkins-tls
+        hosts:
+          - jenkins.lblam.tma-demos.shop
 persistence:
   enabled: true
   storageClass: longhorn
