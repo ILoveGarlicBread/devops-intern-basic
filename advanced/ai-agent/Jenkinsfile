@@ -30,7 +30,25 @@ pipeline {
     }
 
     stages {
+        stage('Check Skip CI') {
+            steps {
+                script {
+                    def commitMsg = sh(script: 'git log -1 --pretty=%B', returnStdout: true).trim()
+                    if (commitMsg.contains('[skip ci]')) {
+                        echo "Commit message contains [skip ci]. Halting pipeline to prevent infinite loop!"
+                        currentBuild.result = 'SUCCESS'
+                        env.SKIP_BUILD = 'true'
+                    } else {
+                        env.SKIP_BUILD = 'false'
+                    }
+                }
+            }
+        }
+
         stage('Build & Push to ECR (Kaniko)') {
+            when {
+                environment name: 'SKIP_BUILD', value: 'false'
+            }
             steps {
                 // Use the Kaniko container for a Dockerless build!
                 container('kaniko') {
@@ -51,6 +69,9 @@ pipeline {
         }
 
         stage('Update Helm Chart (GitOps)') {
+            when {
+                environment name: 'SKIP_BUILD', value: 'false'
+            }
             steps {
                 // Switch back to the default Jenkins container which has git installed
                 container('jnlp') {
