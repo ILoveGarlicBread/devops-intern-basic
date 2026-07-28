@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: velero
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: 'https://vmware-tanzu.github.io/helm-charts'
+      chart: velero
+      targetRevision: 12.1.0
+      helm:
+        valueFiles:
+        - $values/advanced/gitops/helm-values/backup-restore/velero-values.yaml
+    - repoURL: 'ssh://APKAS7ZMGBTBFHE4AQG3@git-codecommit.ap-south-1.amazonaws.com/v1/repos/TMA-DevOps-Lam-Internship'
+      targetRevision: main
+      ref: values
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: velero
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
