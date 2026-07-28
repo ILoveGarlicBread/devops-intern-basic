@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   repository: 205714230466.dkr.ecr.ap-south-1.amazonaws.com/ai-agent
   pullPolicy: Always
-  tag: "cad5b95"
+  tag: "0efeeaf"
 
 imagePullSecrets:
   - name: ecr-registry-secret
