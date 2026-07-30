@@ -10,6 +10,33 @@ controller:
     - git
     - configuration-as-code
     - docker-workflow
+    - job-dsl
+  JCasC:
+    defaultConfig: true
+    configScripts:
+      gitops-jobs: |
+        jobs:
+          - script: >
+              pipelineJob('ai-agent-cd') {
+                  definition {
+                      cpsScm {
+                          scm {
+                              git {
+                                  remote {
+                                      url('ssh://git-codecommit.ap-south-1.amazonaws.com/v1/repos/ai-agent-app')
+                                      credentials('codecommit-ssh')
+                                  }
+                                  branch('*/main')
+                              }
+                          }
+                          scriptPath('Jenkinsfile')
+                          lightweight(true)
+                      }
+                  }
+                  triggers {
+                      scm('* * * * *')
+                  }
+              }
   ingress:
     enabled: true
     hostName: jenkins.lblam.tma-demos.shop
