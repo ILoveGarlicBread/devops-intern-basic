@@ -28,10 +28,18 @@ data:
         },
         {
           "type": "stat",
-          "title": "Total Accounts",
-          "gridPos": { "h": 8, "w": 6, "x": 6, "y": 0 },
+          "title": "Active Accounts",
+          "gridPos": { "h": 8, "w": 3, "x": 6, "y": 0 },
           "targets": [
-            { "expr": "max(fineract_accounts_total)", "legendFormat": "Accounts" }
+            { "expr": "max(fineract_accounts_active)", "legendFormat": "Active" }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Total Accounts",
+          "gridPos": { "h": 8, "w": 3, "x": 9, "y": 0 },
+          "targets": [
+            { "expr": "max(fineract_accounts_total)", "legendFormat": "Total" }
           ]
         },
         {
@@ -56,7 +64,8 @@ data:
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
           "targets": [
             { "expr": "fineract_clients_total", "legendFormat": "Clients" },
-            { "expr": "fineract_accounts_total", "legendFormat": "Accounts" }
+            { "expr": "fineract_accounts_active", "legendFormat": "Active Accounts" },
+            { "expr": "fineract_accounts_total", "legendFormat": "Total Accounts" }
           ]
         },
         {

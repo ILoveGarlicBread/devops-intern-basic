@@ -21,6 +21,11 @@ data:
             help: 'Total accounts'
             values: [count]
             query: 'SELECT COUNT(*) as count FROM m_savings_account;'
+          - metric_name: fineract_accounts_active
+            type: gauge
+            help: 'Active accounts'
+            values: [count]
+            query: 'SELECT COUNT(*) as count FROM m_savings_account WHERE status_enum = 300;'
           - metric_name: fineract_loans_total
             type: gauge
             help: 'Total loans'
