@@ -66,6 +66,8 @@ spec:
   - ports:
     - protocol: TCP
       port: 443
+    - protocol: TCP
+      port: 6443
 
 ---
 # 4. EXTERNAL SECRETS INGRESS
