@@ -653,3 +653,11 @@ resource "aws_route53_record" "argocd_cname" {
   ttl     = 300
   records = ["fineract.lblam.tma-demos.shop"]
 }
+
+resource "aws_route53_record" "ai_agent_cname" {
+  zone_id = data.aws_route53_zone.primary.zone_id
+  name    = "ai.lblam.tma-demos.shop"
+  type    = "CNAME"
+  ttl     = 300
+  records = ["fineract.lblam.tma-demos.shop"]
+}
