@@ -97,6 +97,13 @@ spec:
     - podSelector:
         matchLabels:
           app: fineract-proxy
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: ai-agent
+      podSelector:
+        matchLabels:
+          app: ai-agent-mcp
   egress:
   - to:
     - podSelector:
