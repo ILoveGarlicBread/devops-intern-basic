@@ -29,7 +29,7 @@ data:
         {
           "type": "stat",
           "title": "Active Accounts",
-          "gridPos": { "h": 8, "w": 5, "x": 7, "y": 0 },
+          "gridPos": { "h": 8, "w": 5, "x": 5, "y": 0 },
           "targets": [
             { "expr": "max(fineract_accounts_active)", "legendFormat": "Active" }
           ]
@@ -45,7 +45,7 @@ data:
         {
           "type": "stat",
           "title": "Total Loans",
-          "gridPos": { "h": 8, "w": 5, "x": 13, "y": 0 },
+          "gridPos": { "h": 8, "w": 5, "x": 15, "y": 0 },
           "targets": [
             { "expr": "max(fineract_loans_total)", "legendFormat": "Loans" }
           ]
@@ -53,7 +53,7 @@ data:
         {
           "type": "stat",
           "title": "Total Cards",
-          "gridPos": { "h": 8, "w": 4, "x": 19, "y": 0 },
+          "gridPos": { "h": 8, "w": 4, "x": 20, "y": 0 },
           "targets": [
             { "expr": "max(fineract_cards_total)", "legendFormat": "Cards" }
           ]
