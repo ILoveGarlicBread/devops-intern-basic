@@ -61,6 +61,29 @@ spec:
         runAsGroup: 10001
         seccompProfile:
           type: RuntimeDefault
+      initContainers:
+        - name: otel-agent-init
+          image: busybox:1.36
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          command:
+            - sh
+            - -c
+            - |
+              if [ ! -f /otel/opentelemetry-javaagent.jar ]; then
+                echo "Downloading OpenTelemetry Java Agent..."
+                wget -q -O /otel/opentelemetry-javaagent.jar https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.13.0/opentelemetry-javaagent.jar
+                chmod 644 /otel/opentelemetry-javaagent.jar
+              fi
+          volumeMounts:
+            - name: otel-agent
+              mountPath: /otel
+            - name: tmp
+              mountPath: /tmp
       containers:
         - name: fineract-backend
           securityContext:
@@ -130,6 +153,8 @@ spec:
               mountPath: /.fineract/              
             - name: tmp
               mountPath: /tmp
+            - name: otel-agent
+              mountPath: /otel
           readinessProbe:
             httpGet:
               path: /fineract-provider/actuator/health/readiness
@@ -149,4 +174,6 @@ spec:
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-backend-pvc
         - name: tmp
+          emptyDir: {}
+        - name: otel-agent
           emptyDir: {}

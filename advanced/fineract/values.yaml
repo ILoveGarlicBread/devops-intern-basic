@@ -38,6 +38,15 @@ fineractServer:
     MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "prometheus,health,info"
     MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
     MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED: "true"
+    JAVA_TOOL_OPTIONS: "-javaagent:/otel/opentelemetry-javaagent.jar"
+    OTEL_SERVICE_NAME: "fineract-backend"
+    OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-gateway-opentelemetry-collector.logging.svc.cluster.local:4317"
+    OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+    OTEL_TRACES_EXPORTER: "otlp"
+    OTEL_METRICS_EXPORTER: "none"
+    OTEL_LOGS_EXPORTER: "none"
+    OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: "true"
+    OTEL_INSTRUMENTATION_LOGBACK_APPENDER_ENABLED: "true"
   # -- Same as `extraEnv` but passed as secrets
   extraSecretEnv: {}
   # -- Resource settings for Backend pods
