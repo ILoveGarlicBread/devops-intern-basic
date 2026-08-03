@@ -3,7 +3,7 @@ controller:
     defaultCrumbIssuer:
       enabled: false
   image:
-    tag: "latest-jdk17"
+    tag: "latest-jdk21"
   installPlugins:
     - kubernetes
     - workflow-aggregator
