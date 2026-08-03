@@ -58,7 +58,7 @@ Creates `tempo-s3-secret` in the `monitoring` namespace by pulling `AWS_ACCESS_K
 
 ### D. Grafana Datasource & Log-Trace Correlation
 **File:** `advanced/gitops/helm-values/monitoring/prometheus-values.yaml`
-* Added **Tempo** datasource (`http://tempo.monitoring.svc.cluster.local:3100`).
+* Added **Tempo** datasource (`http://tempo.monitoring.svc.cluster.local:3200`).
 * Added **Derived Fields** in Loki datasource to parse `traceID` or `trace_id` regex and provide direct one-click navigation from Loki log lines into Tempo trace waterfalls.
 
 ---
@@ -88,7 +88,7 @@ kubectl get svc -n monitoring -l app.kubernetes.io/name=tempo
 Inside the cluster, services and the OpenTelemetry Gateway can send traces to:
 * **gRPC OTLP:** `tempo.monitoring.svc.cluster.local:4317`
 * **HTTP OTLP:** `tempo.monitoring.svc.cluster.local:4318`
-* **Query API:** `tempo.monitoring.svc.cluster.local:3100`
+* **Query & Metrics API:** `tempo.monitoring.svc.cluster.local:3200`
 
 ---
 
