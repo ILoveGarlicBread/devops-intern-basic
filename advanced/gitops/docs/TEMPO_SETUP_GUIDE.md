@@ -49,6 +49,7 @@ Creates `tempo-s3-secret` in the `monitoring` namespace by pulling `AWS_ACCESS_K
 * **Mode:** Single-binary mode (resource-efficient for `t3a.large` nodes).
 * **Storage Backend:** AWS S3 (`rke2-cluster-backups-...` bucket) + Longhorn PVC (`5Gi`) for WAL and local block cache.
 * **Receivers:** OTLP gRPC (`0.0.0.0:4317`) and OTLP HTTP (`0.0.0.0:4318`).
+* **Metrics Generator:** Enabled `metricsGenerator` with `service_graphs`, `span_metrics`, and `local_blocks` processors to support TraceQL metric queries and Grafana trace rate calculations.
 
 ### C. Tempo ArgoCD Application
 **File:** `advanced/gitops/applications/tempo-app.yaml`
