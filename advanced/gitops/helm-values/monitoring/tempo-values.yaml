@@ -36,7 +36,7 @@ tempo:
           endpoint: "0.0.0.0:4318"
 
   server:
-    http_listen_port: 3100
+    http_listen_port: 3200
 
   extraEnvFrom:
     - secretRef:
