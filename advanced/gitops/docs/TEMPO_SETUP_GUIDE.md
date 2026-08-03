@@ -134,7 +134,67 @@ Inside the cluster, microservices can send traces to either the central **OTel G
 
 ---
 
-## 4. Next Step: Application Instrumentation
-Attach OpenTelemetry Auto-Instrumentation to:
-1. **Fineract (Java):** Mount `opentelemetry-javaagent.jar` in the `fineract-backend` pod or use environment variables (`JAVA_TOOL_OPTIONS: -javaagent:...`).
-2. **AI Agent / FastMCP (Python):** Use OpenTelemetry Python SDK / instrumentation packages to send traces to `otel-gateway-opentelemetry-collector.logging.svc.cluster.local:4317`.
+## 4. Application Instrumentation Implementation
+
+### A. Fineract Backend (Java Auto-Instrumentation)
+1. **EmptyDir & InitContainer Setup:**
+   Since Fineract runs with `readOnlyRootFilesystem: true` and non-root user `10001`, an `initContainer` (`otel-agent-init`) downloads the `opentelemetry-javaagent.jar` into a shared `emptyDir` volume mounted at `/otel`.
+2. **Environment Configuration (`values.yaml`):**
+   ```yaml
+   fineract:
+     extraEnv:
+       - name: JAVA_TOOL_OPTIONS
+         value: "-javaagent:/otel/opentelemetry-javaagent.jar"
+       - name: OTEL_SERVICE_NAME
+         value: "fineract-backend"
+       - name: OTEL_EXPORTER_OTLP_ENDPOINT
+         value: "http://otel-gateway-opentelemetry-collector.logging.svc.cluster.local:4317"
+       - name: OTEL_EXPORTER_OTLP_PROTOCOL
+         value: "grpc"
+       - name: OTEL_METRICS_EXPORTER
+         value: "none"
+       - name: OTEL_LOGS_EXPORTER
+         value: "none"
+   ```
+3. **NetworkPolicy Hardening:**
+   Updated `fineract-backend-policy` to permit egress to:
+   - `logging` namespace on ports `4317/4318` (OTel Collector).
+   - External HTTPS/HTTP (ports `443/80`) to fetch runtime dependencies.
+
+### B. AI Agent & FastMCP Server (Python OpenTelemetry SDK)
+1. **Dependencies (`requirements.txt`):**
+   - `opentelemetry-api`
+   - `opentelemetry-sdk`
+   - `opentelemetry-exporter-otlp`
+   - `opentelemetry-instrumentation-httpx`
+2. **HTTPX & Span Tracing:**
+   - Enabled `HTTPXClientInstrumentor().instrument()`, which automatically injects W3C `traceparent` headers into outgoing requests to Fineract and MCP server.
+   - Wrapped Gradio conversation turns (`agent_chat_turn`), MCP tool calls (`mcp_tool_call`), and tool executions (`mcp.get_fineract_clients`, `mcp.get_fineract_accounts`, `mcp.get_fineract_loans`, `mcp.query_bank_policies`) in explicit tracer spans.
+   - Traces are exported via OTLP gRPC directly to `otel-gateway-opentelemetry-collector.logging.svc.cluster.local:4317`.
+
+---
+
+## 5. End-to-End Distributed Trace Flow
+
+When a user interacts with the system, the full trace spans:
+```text
+[ai-agent-ui: agent_chat_turn]
+  │
+  ├── [ai-agent-ui: mcp_tool_call: get_fineract_clients]
+  │     │
+  │     └── [fineract-mcp-server: mcp.get_fineract_clients]
+  │           │
+  │           └── [fineract-mcp-server: HTTP GET /clients]
+  │                 │
+  │                 └── [fineract-backend: GET /fineract-provider/api/v1/clients]
+  │                       │
+  │                       └── [fineract-backend: SELECT fineract_default.m_client ...]
+```
+
+### Viewing Traces in Grafana
+1. Open Grafana &rarr; **Explore** &rarr; Select datasource **Tempo**.
+2. Run a TraceQL query or search by Service Name:
+   - `{ resource.service.name = "fineract-backend" }`
+   - `{ resource.service.name = "ai-agent-ui" }`
+   - `{ resource.service.name = "fineract-mcp-server" }`
+3. Click any Trace ID to inspect span durations, HTTP status codes, SQL queries, and correlated Loki logs!
