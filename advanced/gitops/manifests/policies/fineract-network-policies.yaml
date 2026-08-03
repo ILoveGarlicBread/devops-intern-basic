@@ -113,6 +113,20 @@ spec:
           values:
           - fineract-default
           - fineract-tenants
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: logging
+    ports:
+    - protocol: TCP
+      port: 4317
+    - protocol: TCP
+      port: 4318
+  - ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80
 
 ---
 # 6. MYSQL DATABASES POLICY
