@@ -1,0 +1,50 @@
+# tempo-values.yaml
+# Lightweight Single-Binary mode with S3 backend
+replicas: 1
+
+tempo:
+  repository: grafana/tempo
+  retention: 72h
+  reportingEnabled: false
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+
+  storage:
+    trace:
+      backend: s3
+      s3:
+        bucket: rke2-cluster-backups-20260702020323339500000001
+        endpoint: s3.ap-south-1.amazonaws.com
+        region: ap-south-1
+        insecure: false
+      wal:
+        path: /var/tempo/wal
+      local:
+        path: /var/tempo/traces
+
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: "0.0.0.0:4317"
+        http:
+          endpoint: "0.0.0.0:4318"
+
+  server:
+    http_listen_port: 3100
+
+extraEnvFrom:
+  - secretRef:
+      name: tempo-s3-secret
+
+persistence:
+  enabled: true
+  storageClassName: longhorn
+  accessModes:
+    - ReadWriteOnce
+  size: 5Gi
