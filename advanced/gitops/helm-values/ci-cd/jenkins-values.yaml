@@ -37,6 +37,7 @@ controller:
                       scm('* * * * *')
                   }
               }
+  jenkinsUrl: "https://jenkins.lblam.tma-demos.shop"
   ingress:
     enabled: true
     apiVersion: "networking.k8s.io/v1"
@@ -47,6 +48,8 @@ controller:
       nginx.ingress.kubernetes.io/ssl-redirect: "true"
       nginx.ingress.kubernetes.io/proxy-body-size: "128m"
       nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+      nginx.ingress.kubernetes.io/proxy-redirect-from: "http://jenkins.lblam.tma-demos.shop/"
+      nginx.ingress.kubernetes.io/proxy-redirect-to: "https://jenkins.lblam.tma-demos.shop/"
     tls:
       - secretName: jenkins-tls
         hosts:
