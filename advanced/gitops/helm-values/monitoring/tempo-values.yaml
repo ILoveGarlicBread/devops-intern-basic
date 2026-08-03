@@ -38,9 +38,9 @@ tempo:
   server:
     http_listen_port: 3100
 
-extraEnvFrom:
-  - secretRef:
-      name: tempo-s3-secret
+  extraEnvFrom:
+    - secretRef:
+        name: tempo-s3-secret
 
 persistence:
   enabled: true
