@@ -78,6 +78,46 @@ kubectl get externalsecret tempo-s3-credentials-ext -n monitoring
 kubectl get secret tempo-s3-secret -n monitoring
 ```
 
+### E. OpenTelemetry Gateway Traces Pipeline
+**File:** `advanced/gitops/helm-values/logging/otel-gateway-values.yaml`
+Configured the `otlp/tempo` exporter and enabled the `traces` pipeline:
+```yaml
+exporters:
+  otlp/tempo:
+    endpoint: "tempo.monitoring.svc.cluster.local:4317"
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp]
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp/tempo]
+```
+
+---
+
+## 3. Deployment Commands & Verification
+
+### Step 1: Deploy ExternalSecret & ArgoCD Applications
+```bash
+# Apply secrets and applications
+kubectl apply -f advanced/gitops/manifests/secrets/external-secrets.yaml
+kubectl apply -f advanced/gitops/applications/tempo-app.yaml
+kubectl annotate application otel-gateway -n argocd argocd.argoproj.io/refresh=hard --overwrite
+```
+
+### Step 2: Verify S3 Secret Sync
+```bash
+kubectl get externalsecret tempo-s3-credentials-ext -n monitoring
+kubectl get secret tempo-s3-secret -n monitoring
+```
+
 ### Step 3: Verify Tempo Pod & Service
 ```bash
 kubectl get pods -n monitoring -l app.kubernetes.io/name=tempo
@@ -85,13 +125,15 @@ kubectl get svc -n monitoring -l app.kubernetes.io/name=tempo
 ```
 
 ### Step 4: Verify OTLP Receiver Endpoint
-Inside the cluster, services and the OpenTelemetry Gateway can send traces to:
-* **gRPC OTLP:** `tempo.monitoring.svc.cluster.local:4317`
-* **HTTP OTLP:** `tempo.monitoring.svc.cluster.local:4318`
-* **Query & Metrics API:** `tempo.monitoring.svc.cluster.local:3200`
+Inside the cluster, microservices can send traces to either the central **OTel Gateway** or directly to **Tempo**:
+* **OTel Gateway (gRPC):** `otel-gateway-opentelemetry-collector.logging.svc.cluster.local:4317`
+* **OTel Gateway (HTTP):** `otel-gateway-opentelemetry-collector.logging.svc.cluster.local:4318`
+* **Tempo Direct (gRPC):** `tempo.monitoring.svc.cluster.local:4317`
+* **Tempo Query & Metrics API:** `tempo.monitoring.svc.cluster.local:3200`
 
 ---
 
-## 4. Next Steps: OpenTelemetry Routing & App Instrumentation
-1. Update `otel-gateway-values.yaml` to route traces to `tempo.monitoring.svc.cluster.local:4317`.
-2. Attach OpenTelemetry Auto-Instrumentation to Fineract (Java Agent) and AI Agent (Python OTel SDK).
+## 4. Next Step: Application Instrumentation
+Attach OpenTelemetry Auto-Instrumentation to:
+1. **Fineract (Java):** Mount `opentelemetry-javaagent.jar` in the `fineract-backend` pod or use environment variables (`JAVA_TOOL_OPTIONS: -javaagent:...`).
+2. **AI Agent / FastMCP (Python):** Use OpenTelemetry Python SDK / instrumentation packages to send traces to `otel-gateway-opentelemetry-collector.logging.svc.cluster.local:4317`.
