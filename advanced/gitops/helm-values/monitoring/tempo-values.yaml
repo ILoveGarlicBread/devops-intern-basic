@@ -38,6 +38,21 @@ tempo:
   server:
     http_listen_port: 3200
 
+  metricsGenerator:
+    enabled: true
+    remoteWriteUrl: "http://prometheus-stack-kube-prom-prometheus.monitoring.svc.cluster.local:9090/api/v1/write"
+    processor:
+      service_graphs:
+        max_items: 10000
+      span_metrics:
+        enable_target_info: true
+      local_blocks:
+        flush_to_storage: true
+    storage:
+      path: "/var/tempo/metrics"
+    traces_storage:
+      path: "/var/tempo/metrics-traces"
+
   extraEnvFrom:
     - secretRef:
         name: tempo-s3-secret
