@@ -26,6 +26,11 @@ config:
       logs_endpoint: "http://loki-write.logging.svc.cluster.local:3100/otlp/v1/logs"
       tls:
         insecure: true
+    otlp/tempo:
+      # Tempo OTLP gRPC endpoint
+      endpoint: "tempo.monitoring.svc.cluster.local:4317"
+      tls:
+        insecure: true
 
   service:
     pipelines:
@@ -33,3 +38,7 @@ config:
         receivers: [otlp]
         processors: [memory_limiter, batch]
         exporters: [otlphttp]
+      traces:
+        receivers: [otlp]
+        processors: [memory_limiter, batch]
+        exporters: [otlp/tempo]
