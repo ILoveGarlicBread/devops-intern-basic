@@ -1,1 +1,11 @@
 advanced/security/keys.md
+
+# Terraform
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# Secrets
+**/VAULT_KEYS.txt
+**/argocd-credentials.txt
+**/GRAFANA_CREDENTIALS.md
